@@ -119,6 +119,9 @@ namespace MassacreDojo.Editor
             // ライト設定
             SetupLighting();
 
+            // SpawnUI作成
+            CreateSpawnUI();
+
             Debug.Log("シーンのセットアップが完了しました！");
             EditorUtility.DisplayDialog("完了", "シーンのセットアップが完了しました。\n\nPlayモードで動作確認してください。", "OK");
         }
@@ -270,36 +273,9 @@ namespace MassacreDojo.Editor
                 return;
             }
 
-            // Canvas作成
-            var canvas = new GameObject("SpawnUI");
-            var canvasComponent = canvas.AddComponent<Canvas>();
-            canvasComponent.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.AddComponent<UnityEngine.UI.CanvasScaler>();
-            canvas.AddComponent<UnityEngine.UI.GraphicRaycaster>();
-
-            // EventSystem作成（なければ）
-            if (UnityEngine.EventSystems.EventSystem.current == null)
-            {
-                var eventSystem = new GameObject("EventSystem");
-                eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-            }
-
-            // Panel作成
-            var panel = new GameObject("Panel");
-            panel.transform.SetParent(canvas.transform, false);
-            var panelRect = panel.AddComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(1, 1);
-            panelRect.anchorMax = new Vector2(1, 1);
-            panelRect.pivot = new Vector2(1, 1);
-            panelRect.anchoredPosition = new Vector2(-10, -10);
-            panelRect.sizeDelta = new Vector2(150, 120);
-
-            var panelImage = panel.AddComponent<UnityEngine.UI.Image>();
-            panelImage.color = new Color(0, 0, 0, 0.5f);
-
-            // SpawnUIコンポーネント追加
-            panel.AddComponent<SpawnUI>();
+            // SpawnUIオブジェクト作成（IMGUIベースなのでシンプル）
+            var spawnUIObject = new GameObject("SpawnUI");
+            spawnUIObject.AddComponent<SpawnUI>();
 
             Debug.Log("SpawnUI を作成しました");
         }

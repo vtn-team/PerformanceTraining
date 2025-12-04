@@ -224,7 +224,8 @@ namespace MassacreDojo.Editor
                         foreach (var item in cat.items)
                         {
                             sb.Append(item.itemName);
-                            sb.Append(item.passed);
+                            // JavaScript uses lowercase "true"/"false" for boolean string conversion
+                            sb.Append(item.passed ? "true" : "false");
                         }
                     }
                 }

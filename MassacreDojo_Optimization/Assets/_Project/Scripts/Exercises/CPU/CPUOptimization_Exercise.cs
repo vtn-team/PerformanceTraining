@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
 
 namespace MassacreDojo.Exercises.CPU
 {
@@ -27,7 +27,7 @@ namespace MassacreDojo.Exercises.CPU
         // TODO: グリッドベースの空間分割を実装してください
 
         // TODO: ここにグリッド用のDictionaryを宣言してください
-        // private Dictionary<int, List<Enemy>> _spatialGrid;
+        // private Dictionary<int, List<EnemyClass>> _spatialGrid;
 
         // グリッドの設定
         private float _cellSize = GameConstants.CELL_SIZE;
@@ -38,7 +38,7 @@ namespace MassacreDojo.Exercises.CPU
         /// 空間グリッドを更新する
         /// </summary>
         /// <param name="enemies">全敵リスト</param>
-        public void UpdateSpatialGrid(List<Enemy> enemies)
+        public void UpdateSpatialGrid(List<EnemyClass> enemies)
         {
             // TODO: グリッドを更新してください
             // ヒント:
@@ -74,7 +74,7 @@ namespace MassacreDojo.Exercises.CPU
         /// </summary>
         /// <param name="position">中心座標</param>
         /// <returns>周辺の敵リスト</returns>
-        public List<Enemy> QueryNearbyEnemies(Vector3 position)
+        public List<EnemyClass> QueryNearbyEnemies(Vector3 position)
         {
             // TODO: 周辺9セル（3x3）から敵を取得してください
             // ヒント:
@@ -85,7 +85,7 @@ namespace MassacreDojo.Exercises.CPU
             // 5. 範囲外チェックを忘れずに
 
             // 仮実装（空リストを返す）- これを置き換えてください
-            return new List<Enemy>();
+            return new List<EnemyClass>();
         }
 
 

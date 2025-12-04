@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
 
 namespace MassacreDojo.Exercises.Memory
 {
@@ -32,8 +32,8 @@ namespace MassacreDojo.Exercises.Memory
         private GameObject _pooledPrefab;
         private Transform _poolParent;
 
-        // TODO: ここにStack<Enemy>を宣言してください
-        // private Stack<Enemy> _enemyPool;
+        // TODO: ここにStack<EnemyClass>を宣言してください
+        // private Stack<EnemyClass> _enemyPool;
 
 
         /// <summary>
@@ -50,14 +50,14 @@ namespace MassacreDojo.Exercises.Memory
             _poolParent = poolObject.transform;
 
             // TODO: Stackを初期化してください
-            // _enemyPool = new Stack<Enemy>(initialSize);
+            // _enemyPool = new Stack<EnemyClass>(initialSize);
 
             // TODO: 初期オブジェクトを生成してプールに追加してください
             // for (int i = 0; i < initialSize; i++)
             // {
             //     var obj = Instantiate(_pooledPrefab, _poolParent);
             //     obj.SetActive(false);
-            //     var enemy = obj.GetComponent<Enemy>();
+            //     var enemy = obj.GetComponent<EnemyClass>();
             //     _enemyPool.Push(enemy);
             // }
         }
@@ -66,7 +66,7 @@ namespace MassacreDojo.Exercises.Memory
         /// プールから敵を取得する
         /// </summary>
         /// <returns>取得した敵（プールが空の場合は新規生成）</returns>
-        public Enemy GetFromPool()
+        public EnemyClass GetFromPool()
         {
             // TODO: プールから敵を取得してください
             // ヒント:
@@ -77,14 +77,14 @@ namespace MassacreDojo.Exercises.Memory
             // 仮実装（問題あり）- これを置き換えてください
             var obj = Instantiate(_pooledPrefab, _poolParent);
             obj.SetActive(true);
-            return obj.GetComponent<Enemy>();
+            return obj.GetComponent<EnemyClass>();
         }
 
         /// <summary>
         /// 敵をプールに返却する
         /// </summary>
         /// <param name="enemy">返却する敵</param>
-        public void ReturnToPool(Enemy enemy)
+        public void ReturnToPool(EnemyClass enemy)
         {
             // TODO: 敵をプールに返却してください
             // ヒント:
@@ -134,15 +134,15 @@ namespace MassacreDojo.Exercises.Memory
         //
         // TODO: Action<Enemy>をフィールドでキャッシュしてください
 
-        // TODO: ここにAction<Enemy>を宣言してください
-        // private Action<Enemy> _cachedUpdateAction;
+        // TODO: ここにAction<EnemyClass>を宣言してください
+        // private Action<EnemyClass> _cachedUpdateAction;
 
 
         /// <summary>
         /// キャッシュされた更新アクションを取得する
         /// </summary>
         /// <returns>キャッシュされたアクション</returns>
-        public Action<Enemy> GetCachedUpdateAction()
+        public Action<EnemyClass> GetCachedUpdateAction()
         {
             // TODO: キャッシュされたActionを返してください
             // ヒント:
@@ -151,7 +151,7 @@ namespace MassacreDojo.Exercises.Memory
             // 3. 二度目以降はキャッシュを返す
 
             // 仮実装（問題あり）- これを置き換えてください
-            return new Action<Enemy>((enemy) =>
+            return new Action<EnemyClass>((enemy) =>
             {
                 if (enemy != null && enemy.IsAlive)
                 {
@@ -168,24 +168,24 @@ namespace MassacreDojo.Exercises.Memory
         //
         // TODO: List<Enemy>をフィールドで保持し、Clear()で再利用してください
 
-        // TODO: ここにList<Enemy>を宣言してください
-        // private List<Enemy> _reusableEnemyList;
+        // TODO: ここにList<EnemyClass>を宣言してください
+        // private List<EnemyClass> _reusableEnemyList;
 
 
         /// <summary>
         /// 再利用可能なリストを取得する
         /// </summary>
         /// <returns>クリア済みのリスト</returns>
-        public List<Enemy> GetReusableList()
+        public List<EnemyClass> GetReusableList()
         {
             // TODO: 再利用可能なリストを返してください
             // ヒント:
-            // 1. _reusableEnemyList が null なら new List<Enemy>(100) で初期化
+            // 1. _reusableEnemyList が null なら new List<EnemyClass>(100) で初期化
             // 2. Clear() でリセット
             // 3. 同じインスタンスを返す
 
             // 仮実装（問題あり）- これを置き換えてください
-            return new List<Enemy>();
+            return new List<EnemyClass>();
         }
 
 

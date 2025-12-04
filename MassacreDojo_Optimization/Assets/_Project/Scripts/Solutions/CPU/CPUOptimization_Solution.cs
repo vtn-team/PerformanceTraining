@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
+using EnemySystem = MassacreDojo.Enemy.EnemySystem;
 
 namespace MassacreDojo.Solutions.CPU
 {
@@ -18,10 +19,10 @@ namespace MassacreDojo.Solutions.CPU
         // ========================================================
 
         // 【解答】グリッド用のDictionary
-        private Dictionary<int, List<Enemy>> _spatialGrid;
+        private Dictionary<int, List<EnemyClass>> _spatialGrid;
 
         // 【解答】再利用リスト（GetNearby用）
-        private List<Enemy> _nearbyResult;
+        private List<EnemyClass> _nearbyResult;
 
         private float _cellSize = GameConstants.CELL_SIZE;
         private int _gridWidth = GameConstants.GRID_SIZE;
@@ -30,12 +31,12 @@ namespace MassacreDojo.Solutions.CPU
         private void Awake()
         {
             // 【解答】事前初期化
-            _spatialGrid = new Dictionary<int, List<Enemy>>();
-            _nearbyResult = new List<Enemy>(50);
+            _spatialGrid = new Dictionary<int, List<EnemyClass>>();
+            _nearbyResult = new List<EnemyClass>(50);
         }
 
 
-        public void UpdateSpatialGrid(List<Enemy> enemies)
+        public void UpdateSpatialGrid(List<EnemyClass> enemies)
         {
             // 【解答】グリッドを更新
 
@@ -55,7 +56,7 @@ namespace MassacreDojo.Solutions.CPU
                 // セルがなければ作成
                 if (!_spatialGrid.TryGetValue(cellIndex, out var cell))
                 {
-                    cell = new List<Enemy>(10);
+                    cell = new List<EnemyClass>(10);
                     _spatialGrid[cellIndex] = cell;
                 }
 
@@ -81,7 +82,7 @@ namespace MassacreDojo.Solutions.CPU
         }
 
 
-        public List<Enemy> QueryNearbyEnemies(Vector3 position)
+        public List<EnemyClass> QueryNearbyEnemies(Vector3 position)
         {
             // 【解答】周辺9セルから敵を取得
 

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
+using EnemySystem = MassacreDojo.Enemy.EnemySystem;
 
 namespace MassacreDojo.Solutions.Tradeoff
 {
@@ -19,12 +20,12 @@ namespace MassacreDojo.Solutions.Tradeoff
 
         private struct CacheEntry
         {
-            public List<Enemy> Neighbors;
+            public List<EnemyClass> Neighbors;
             public int LastUpdateFrame;
         }
 
         // 【解答】キャッシュ用のDictionary
-        private Dictionary<Enemy, CacheEntry> _cache;
+        private Dictionary<EnemyClass, CacheEntry> _cache;
 
         [Header("キャッシュ設定")]
         [SerializeField] private int _cacheLifetimeFrames = 10;
@@ -37,7 +38,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         private int _currentFrame;
 
         // 【解答】計算用の再利用リスト
-        private List<Enemy> _tempList;
+        private List<EnemyClass> _tempList;
 
 
         // ========================================================
@@ -47,8 +48,8 @@ namespace MassacreDojo.Solutions.Tradeoff
         private void Awake()
         {
             // 【解答】キャッシュと一時リストを初期化
-            _cache = new Dictionary<Enemy, CacheEntry>();
-            _tempList = new List<Enemy>(50);
+            _cache = new Dictionary<EnemyClass, CacheEntry>();
+            _tempList = new List<EnemyClass>(50);
         }
 
 
@@ -56,7 +57,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         // メインメソッド【解答】
         // ========================================================
 
-        public List<Enemy> GetNeighbors(Enemy enemy)
+        public List<EnemyClass> GetNeighbors(EnemyClass enemy)
         {
             _currentFrame = Time.frameCount;
 
@@ -82,15 +83,15 @@ namespace MassacreDojo.Solutions.Tradeoff
         // キャッシュ更新【解答】
         // ========================================================
 
-        private List<Enemy> UpdateCache(Enemy enemy)
+        private List<EnemyClass> UpdateCache(EnemyClass enemy)
         {
             // 【解答】近傍を計算
-            List<Enemy> neighbors = CalculateNeighbors(enemy);
+            List<EnemyClass> neighbors = CalculateNeighbors(enemy);
 
             // 【解答】キャッシュに保存（リストのコピーを作成）
             var entry = new CacheEntry
             {
-                Neighbors = new List<Enemy>(neighbors),
+                Neighbors = new List<EnemyClass>(neighbors),
                 LastUpdateFrame = _currentFrame
             };
             _cache[enemy] = entry;
@@ -103,11 +104,11 @@ namespace MassacreDojo.Solutions.Tradeoff
         // 近傍計算【解答】
         // ========================================================
 
-        private List<Enemy> CalculateNeighbors(Enemy enemy)
+        private List<EnemyClass> CalculateNeighbors(EnemyClass enemy)
         {
             // 【解答】再利用リストを使用
             if (_tempList == null)
-                _tempList = new List<Enemy>(50);
+                _tempList = new List<EnemyClass>(50);
             _tempList.Clear();
 
             var enemySystem = FindObjectOfType<EnemySystem>();
@@ -136,7 +137,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         // キャッシュ管理【解答】
         // ========================================================
 
-        public void InvalidateCache(Enemy enemy)
+        public void InvalidateCache(EnemyClass enemy)
         {
             // 【解答】指定した敵のキャッシュを削除
             _cache.Remove(enemy);

@@ -69,6 +69,8 @@ namespace MassacreDojo.Editor
                 // Tradeoff課題
                 deployedCount += DeployExerciseFile("Tradeoff", "NeighborCache_Exercise.cs");
                 deployedCount += DeployExerciseFile("Tradeoff", "DecisionCache_Exercise.cs");
+                deployedCount += DeployExerciseFile("Tradeoff", "TrigLUT_Exercise.cs");
+                deployedCount += DeployExerciseFile("Tradeoff", "VisibilityMap_Exercise.cs");
 
                 AssetDatabase.Refresh();
 
@@ -211,6 +213,10 @@ namespace MassacreDojo.Editor
                 File.Exists($"{DestinationPath}/Tradeoff/NeighborCache_Exercise.cs");
             status["Tradeoff/DecisionCache_Exercise.cs"] =
                 File.Exists($"{DestinationPath}/Tradeoff/DecisionCache_Exercise.cs");
+            status["Tradeoff/TrigLUT_Exercise.cs"] =
+                File.Exists($"{DestinationPath}/Tradeoff/TrigLUT_Exercise.cs");
+            status["Tradeoff/VisibilityMap_Exercise.cs"] =
+                File.Exists($"{DestinationPath}/Tradeoff/VisibilityMap_Exercise.cs");
 
             return status;
         }

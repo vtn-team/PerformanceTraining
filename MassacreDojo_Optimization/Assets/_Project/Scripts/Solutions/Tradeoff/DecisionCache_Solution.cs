@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
+using EnemyState = MassacreDojo.Enemy.EnemyState;
 
 namespace MassacreDojo.Solutions.Tradeoff
 {
@@ -26,7 +27,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         }
 
         // 【解答】キャッシュ用のDictionary
-        private Dictionary<Enemy, DecisionEntry> _decisions;
+        private Dictionary<EnemyClass, DecisionEntry> _decisions;
 
         [Header("キャッシュ設定")]
         [SerializeField] private int _decisionLifetimeFrames = 5;
@@ -50,7 +51,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         private void Awake()
         {
             // 【解答】キャッシュを初期化
-            _decisions = new Dictionary<Enemy, DecisionEntry>();
+            _decisions = new Dictionary<EnemyClass, DecisionEntry>();
         }
 
 
@@ -58,7 +59,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         // メインメソッド【解答】
         // ========================================================
 
-        public EnemyState GetDecision(Enemy enemy, Vector3 playerPos,
+        public EnemyState GetDecision(EnemyClass enemy, Vector3 playerPos,
             out Vector3 targetPos, out Vector3 moveDirection)
         {
             _currentFrame = Time.frameCount;
@@ -90,7 +91,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         // AI判断ロジック【解答】
         // ========================================================
 
-        private EnemyState MakeDecision(Enemy enemy, Vector3 playerPos,
+        private EnemyState MakeDecision(EnemyClass enemy, Vector3 playerPos,
             out Vector3 targetPos, out Vector3 moveDirection)
         {
             Vector3 enemyPos = enemy.transform.position;
@@ -121,7 +122,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         // キャッシュ保存【解答】
         // ========================================================
 
-        private void CacheDecision(Enemy enemy, EnemyState state,
+        private void CacheDecision(EnemyClass enemy, EnemyState state,
             Vector3 targetPos, Vector3 moveDirection)
         {
             // 【解答】判断結果をキャッシュに保存
@@ -140,7 +141,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         // キャッシュ管理【解答】
         // ========================================================
 
-        public void InvalidateCache(Enemy enemy)
+        public void InvalidateCache(EnemyClass enemy)
         {
             // 【解答】指定した敵のキャッシュを削除
             _decisions.Remove(enemy);
@@ -158,7 +159,7 @@ namespace MassacreDojo.Solutions.Tradeoff
         public void CleanupDeadEntries()
         {
             // 【解答】死亡した敵のキャッシュを削除
-            var deadEnemies = new List<Enemy>();
+            var deadEnemies = new List<EnemyClass>();
             foreach (var kvp in _decisions)
             {
                 if (kvp.Key == null || !kvp.Key.IsAlive)

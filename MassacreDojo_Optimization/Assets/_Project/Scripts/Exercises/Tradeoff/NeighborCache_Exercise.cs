@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
+using EnemySystem = MassacreDojo.Enemy.EnemySystem;
 
 namespace MassacreDojo.Exercises.Tradeoff
 {
@@ -38,12 +39,12 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// </summary>
         private struct CacheEntry
         {
-            public List<Enemy> Neighbors;
+            public List<EnemyClass> Neighbors;
             public int LastUpdateFrame;
         }
 
         // TODO: ここにキャッシュ用のDictionaryを宣言してください
-        // private Dictionary<Enemy, CacheEntry> _cache;
+        // private Dictionary<EnemyClass, CacheEntry> _cache;
 
 
         // ========================================================
@@ -91,7 +92,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// </summary>
         /// <param name="enemy">対象の敵</param>
         /// <returns>近傍の敵リスト</returns>
-        public List<Enemy> GetNeighbors(Enemy enemy)
+        public List<EnemyClass> GetNeighbors(EnemyClass enemy)
         {
             _currentFrame = Time.frameCount;
 
@@ -118,7 +119,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// </summary>
         /// <param name="enemy">対象の敵</param>
         /// <returns>更新された近傍リスト</returns>
-        private List<Enemy> UpdateCache(Enemy enemy)
+        private List<EnemyClass> UpdateCache(EnemyClass enemy)
         {
             // TODO: キャッシュを更新してください
             // ヒント:
@@ -141,14 +142,14 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// <summary>
         /// 近傍の敵を実際に計算する（重い処理）
         /// </summary>
-        private List<Enemy> CalculateNeighbors(Enemy enemy)
+        private List<EnemyClass> CalculateNeighbors(EnemyClass enemy)
         {
             // TODO: _tempList を再利用してください（GC対策）
             // ヒント:
             // if (_tempList == null) _tempList = new List<Enemy>(50);
             // _tempList.Clear();
 
-            var result = new List<Enemy>(); // 問題あり - 毎回new
+            var result = new List<EnemyClass>(); // 問題あり - 毎回new
 
             var enemySystem = FindObjectOfType<EnemySystem>();
             if (enemySystem == null) return result;
@@ -181,7 +182,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// 特定の敵のキャッシュをクリアする
         /// （敵が死亡した時などに呼ぶ）
         /// </summary>
-        public void InvalidateCache(Enemy enemy)
+        public void InvalidateCache(EnemyClass enemy)
         {
             // TODO: 指定した敵のキャッシュを削除してください
             // ヒント: _cache.Remove(enemy);

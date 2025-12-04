@@ -16,6 +16,8 @@ namespace MassacreDojo.Core
         public const float FIELD_SIZE = 100f;
         public const float FIELD_HALF_SIZE = FIELD_SIZE / 2f;
         public const float SPAWN_MARGIN = 5f;
+        public const float SPAWN_MIN_DISTANCE = 10f;
+        public const float SPAWN_MAX_DISTANCE = 30f;
 
         // ===== 空間分割設定 =====
         public const float CELL_SIZE = 10f;

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using EnemyClass = MassacreDojo.Enemy.Enemy;
+using EnemyState = MassacreDojo.Enemy.EnemyState;
 
 namespace MassacreDojo.Exercises.Tradeoff
 {
@@ -92,7 +93,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// <param name="targetPos">出力: 目標位置</param>
         /// <param name="moveDirection">出力: 移動方向</param>
         /// <returns>判断された状態</returns>
-        public EnemyState GetDecision(Enemy enemy, Vector3 playerPos,
+        public EnemyState GetDecision(EnemyClass enemy, Vector3 playerPos,
             out Vector3 targetPos, out Vector3 moveDirection)
         {
             _currentFrame = Time.frameCount;
@@ -124,7 +125,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// <summary>
         /// AI判断を実際に行う（重い処理）
         /// </summary>
-        private EnemyState MakeDecision(Enemy enemy, Vector3 playerPos,
+        private EnemyState MakeDecision(EnemyClass enemy, Vector3 playerPos,
             out Vector3 targetPos, out Vector3 moveDirection)
         {
             Vector3 enemyPos = enemy.transform.position;
@@ -161,7 +162,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// <summary>
         /// AI判断をキャッシュに保存する
         /// </summary>
-        private void CacheDecision(Enemy enemy, EnemyState state,
+        private void CacheDecision(EnemyClass enemy, EnemyState state,
             Vector3 targetPos, Vector3 moveDirection)
         {
             // TODO: 判断結果をキャッシュに保存してください
@@ -185,7 +186,7 @@ namespace MassacreDojo.Exercises.Tradeoff
         /// 特定の敵のキャッシュをクリアする
         /// （敵がダメージを受けた時など、即座に再判断が必要な場合）
         /// </summary>
-        public void InvalidateCache(Enemy enemy)
+        public void InvalidateCache(EnemyClass enemy)
         {
             // TODO: 指定した敵のキャッシュを削除してください
             // ヒント: _decisions.Remove(enemy);
