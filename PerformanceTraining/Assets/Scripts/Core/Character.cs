@@ -521,6 +521,9 @@ namespace PerformanceTraining.Core
             {
                 killer.OnKill?.Invoke(killer, this);
             }
+
+            // キャラクターを破棄
+            Destroy(gameObject);
         }
 
         // ===== 移動 =====

@@ -55,8 +55,8 @@ namespace PerformanceTraining.Editor
             Memory_CollectionReuse,
             // CPU Steps
             CPU_SpatialPartition,
-            CPU_StaggeredUpdate,
-            CPU_SqrMagnitude,
+            CPU_ProcessingOrder,
+            CPU_LoadBalancing,
             // Tradeoff Steps
             Tradeoff_NeighborCache,
             Tradeoff_DecisionCache,
@@ -139,18 +139,27 @@ namespace PerformanceTraining.Editor
             new ExerciseInfo
             {
                 Title = "課題2: CPU最適化",
-                Description = "CPU負荷の高い処理を最適化する",
+                Description = "適切な探索ロジックとせよ\n\n" +
+                              "敵の探索・攻撃処理が非効率な実装になっています。\n" +
+                              "空間分割と処理順序の最適化を実装してください。",
                 TargetMetric = "Frame Time (ms)",
                 TargetBefore = "40+ ms",
                 TargetAfter = "< 16 ms (60fps)",
                 SourceFile = "Exercises/CPU/CPUOptimization_Exercise.cs",
                 MeasurementType = "CPU",
                 TestMethodName = "TestCPUOptimization",
-                Steps = new StepInfo[]
+                Steps = new StepInfo[] { }, // 実装項目は非表示（ヒントで誘導）
+                Hints = new HintInfo
                 {
-                    new StepInfo { Type = StepType.CPU_SpatialPartition, Name = "Step 1: 空間分割", Description = "O(n²)をO(1)に近づける" },
-                    new StepInfo { Type = StepType.CPU_StaggeredUpdate, Name = "Step 2: 更新分散", Description = "負荷をフレーム間で分散" },
-                    new StepInfo { Type = StepType.CPU_SqrMagnitude, Name = "Step 3: 距離計算最適化", Description = "sqrMagnitudeで平方根を省略" }
+                    ProfilerGuide = "Window > Analysis > Profiler を開く\n" +
+                                   "CPU Usage モジュールを選択し、Hierarchy ビューで Self 列をクリックしてソート\n" +
+                                   "重い処理（赤い部分）をダブルクリックするとソースコードに飛べる",
+                    CheckPoint = "① 空間分割: GetAllCharacters() を GetNearbyCharacters() に置き換える\n" +
+                                "   → グリッドを実装し、周辺9セルのみ検索（O(n)→O(1)）\n\n" +
+                                "② 処理順序: ExecuteAttackSequence() 内の呼び出し順序を並び替える\n" +
+                                "   → 軽いフィルタを先に、重い経路探索を最後に実行",
+                    FixCount = 2,
+                    TargetFolders = new string[] { "Scripts/Exercises/CPU/" }
                 }
             },
             // 課題3: トレードオフ

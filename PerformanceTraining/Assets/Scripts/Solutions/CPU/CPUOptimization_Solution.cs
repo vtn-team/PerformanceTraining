@@ -1,74 +1,90 @@
 using System.Collections.Generic;
 using UnityEngine;
 using PerformanceTraining.Core;
-using EnemyClass = PerformanceTraining.Enemy.Enemy;
-using EnemySystem = PerformanceTraining.Enemy.EnemySystem;
 
 namespace PerformanceTraining.Solutions.CPU
 {
     /// <summary>
-    /// 【解答】課題2: CPU計算キャッシュ
+    /// 【課題2: CPU計算最適化 - 解答】
     ///
     /// このファイルは教員用の解答です。
     /// 学生には見せないでください。
+    ///
+    /// 修正箇所①: 空間分割 → O(n) → O(1)
+    ///   - Dictionary でグリッドを管理
+    ///   - GetNearbyCharacters で周辺9セルのみ検索
+    ///
+    /// 修正箇所②: 処理順序 → 軽いフィルタ先、重い処理後
+    ///   【最悪】全取得 → 経路探索 → HPフィルタ → 距離フィルタ → 攻撃
+    ///   【最適】近傍取得 → 距離フィルタ → HPフィルタ → 経路探索 → 攻撃
     /// </summary>
     public class CPUOptimization_Solution : MonoBehaviour
     {
-        // ========================================================
-        // Step 1: 空間分割【解答】
-        // ========================================================
+        [Header("Settings")]
+        [SerializeField] private float _maxAttackDistance = 20f;
+        [SerializeField] private float _minTargetHP = 10f;
+        [SerializeField] private float _maxTargetHP = 100f;
 
-        // 【解答】グリッド用のDictionary
-        private Dictionary<int, List<EnemyClass>> _spatialGrid;
+        [Header("Debug")]
+        [SerializeField] private int _lastProcessedCount;
+        [SerializeField] private float _lastExecutionTimeMs;
 
-        // 【解答】再利用リスト（GetNearby用）
-        private List<EnemyClass> _nearbyResult;
+        private CharacterManager _characterManager;
+
+        // ================================================================
+        // 修正箇所①: 空間分割【解答】
+        // ================================================================
+        private Dictionary<int, List<Character>> _spatialGrid;
+        private List<Character> _nearbyResult;
 
         private float _cellSize = GameConstants.CELL_SIZE;
         private int _gridWidth = GameConstants.GRID_SIZE;
 
-
         private void Awake()
         {
-            // 【解答】事前初期化
-            _spatialGrid = new Dictionary<int, List<EnemyClass>>();
-            _nearbyResult = new List<EnemyClass>(50);
+            _characterManager = FindObjectOfType<CharacterManager>();
+
+            // 【解答】空間グリッドを初期化
+            _spatialGrid = new Dictionary<int, List<Character>>();
+            _nearbyResult = new List<Character>(50);
         }
 
-
-        public void UpdateSpatialGrid(List<EnemyClass> enemies)
+        /// <summary>
+        /// 【解答】空間グリッドを更新する
+        /// </summary>
+        public void UpdateSpatialGrid()
         {
-            // 【解答】グリッドを更新
-
             // 1. 各セルのリストをクリア
             foreach (var cell in _spatialGrid.Values)
             {
                 cell.Clear();
             }
 
-            // 2. 各敵をセルに追加
-            foreach (var enemy in enemies)
-            {
-                if (enemy == null || !enemy.IsAlive) continue;
+            if (_characterManager == null) return;
 
-                int cellIndex = GetCellIndex(enemy.transform.position);
+            // 2. 各キャラクターをセルに追加
+            foreach (var character in _characterManager.AliveCharacters)
+            {
+                if (character == null || !character.IsAlive) continue;
+
+                int cellIndex = GetCellIndex(character.transform.position);
 
                 // セルがなければ作成
                 if (!_spatialGrid.TryGetValue(cellIndex, out var cell))
                 {
-                    cell = new List<EnemyClass>(10);
+                    cell = new List<Character>(10);
                     _spatialGrid[cellIndex] = cell;
                 }
 
-                cell.Add(enemy);
+                cell.Add(character);
             }
         }
 
-
+        /// <summary>
+        /// 【解答】座標からセルインデックスを取得する
+        /// </summary>
         public int GetCellIndex(Vector3 position)
         {
-            // 【解答】座標からセルインデックスを計算
-
             // フィールド中心がorigin（0,0）
             int x = Mathf.FloorToInt((position.x + GameConstants.FIELD_HALF_SIZE) / _cellSize);
             int z = Mathf.FloorToInt((position.z + GameConstants.FIELD_HALF_SIZE) / _cellSize);
@@ -81,11 +97,11 @@ namespace PerformanceTraining.Solutions.CPU
             return z * _gridWidth + x;
         }
 
-
-        public List<EnemyClass> QueryNearbyEnemies(Vector3 position)
+        /// <summary>
+        /// 【解答】指定位置周辺のキャラクターを取得する（O(1)平均）
+        /// </summary>
+        public List<Character> GetNearbyCharacters(Vector3 position, Character excludeCharacter)
         {
-            // 【解答】周辺9セルから敵を取得
-
             _nearbyResult.Clear();
 
             // 中心セルの座標を計算
@@ -106,12 +122,15 @@ namespace PerformanceTraining.Solutions.CPU
 
                     int cellIndex = z * _gridWidth + x;
 
-                    // セルの敵をリストに追加
+                    // セルのキャラクターをリストに追加
                     if (_spatialGrid.TryGetValue(cellIndex, out var cell))
                     {
-                        foreach (var enemy in cell)
+                        foreach (var character in cell)
                         {
-                            _nearbyResult.Add(enemy);
+                            if (character != null && character != excludeCharacter && character.IsAlive)
+                            {
+                                _nearbyResult.Add(character);
+                            }
                         }
                     }
                 }
@@ -120,68 +139,173 @@ namespace PerformanceTraining.Solutions.CPU
             return _nearbyResult;
         }
 
+        // ================================================================
+        // 修正箇所②: 処理順序の最適化【解答】
+        // ================================================================
 
-        // ========================================================
-        // Step 2: 更新分散【解答】
-        // ========================================================
-
-        public bool ShouldUpdateThisFrame(int group, int frameCount)
+        /// <summary>
+        /// 【解答】攻撃シーケンスを実行する（最適化版）
+        /// </summary>
+        public void ExecuteAttackSequence(Character attacker)
         {
-            // 【解答】グループに応じて更新タイミングを分散
-            return frameCount % GameConstants.AI_UPDATE_GROUPS == group;
+            if (attacker == null || !attacker.IsAlive) return;
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            // ============================================================
+            // 【最適化された呼び出し順序】
+            // ============================================================
+
+            // Step A: 近傍のキャラクターのみ取得（空間分割でO(1)）
+            List<Character> candidates = GetNearbyCharacters(attacker.transform.position, attacker);
+
+            // Step B: 距離条件でフィルタ（軽い処理を先に）
+            candidates = FilterByDistance(candidates, attacker, _maxAttackDistance);
+
+            // Step C: HP条件でフィルタ（軽い処理）
+            candidates = FilterByHP(candidates, _minTargetHP, _maxTargetHP);
+
+            // Step D: 経路探索でソート（重い処理は最後、少数のみ）
+            candidates = SortByPathfindingDistance(candidates, attacker);
+
+            // Step E: 先頭を攻撃
+            AttackFirst(candidates, attacker);
+
+            // ============================================================
+
+            stopwatch.Stop();
+            _lastExecutionTimeMs = (float)stopwatch.Elapsed.TotalMilliseconds;
+            _lastProcessedCount = candidates.Count;
         }
 
+        // ================================================================
+        // 処理ブロック
+        // ================================================================
 
-        // ========================================================
-        // Step 3: 距離計算【解答】
-        // ========================================================
-
-        public float CalculateDistanceSqr(Vector3 a, Vector3 b)
+        public List<Character> FilterByDistance(List<Character> characters, Character attacker, float maxDistance)
         {
-            // 【解答】sqrMagnitudeを使用
-            return (a - b).sqrMagnitude;
-        }
+            if (attacker == null) return characters;
 
-
-        public bool IsWithinDistance(Vector3 a, Vector3 b, float maxDistance)
-        {
-            // 【解答】sqrMagnitudeで距離判定
+            var result = new List<Character>();
+            Vector3 attackerPos = attacker.transform.position;
             float maxDistSqr = maxDistance * maxDistance;
-            return (a - b).sqrMagnitude <= maxDistSqr;
+
+            foreach (var c in characters)
+            {
+                if (c == null) continue;
+
+                float distSqr = (c.transform.position - attackerPos).sqrMagnitude;
+                if (distSqr <= maxDistSqr)
+                {
+                    result.Add(c);
+                }
+            }
+            return result;
         }
 
-
-        // ========================================================
-        // デバッグ表示
-        // ========================================================
-
-        private void OnDrawGizmos()
+        public List<Character> FilterByHP(List<Character> characters, float minHP, float maxHP)
         {
-            if (GameManager.Instance?.Settings?.showSpatialGrid == true && _spatialGrid != null)
+            var result = new List<Character>();
+
+            foreach (var c in characters)
             {
-                foreach (var kvp in _spatialGrid)
+                if (c == null) continue;
+
+                float hp = c.Stats.currentHealth;
+                if (hp >= minHP && hp <= maxHP)
                 {
-                    int index = kvp.Key;
-                    var enemies = kvp.Value;
+                    result.Add(c);
+                }
+            }
+            return result;
+        }
 
-                    if (enemies.Count == 0) continue;
+        public List<Character> SortByPathfindingDistance(List<Character> characters, Character attacker)
+        {
+            if (attacker == null || characters.Count == 0) return characters;
 
-                    int x = index % _gridWidth;
-                    int z = index / _gridWidth;
+            var withDistance = new List<(Character character, float distance)>();
 
-                    float worldX = x * _cellSize - GameConstants.FIELD_HALF_SIZE + _cellSize / 2f;
-                    float worldZ = z * _cellSize - GameConstants.FIELD_HALF_SIZE + _cellSize / 2f;
+            foreach (var c in characters)
+            {
+                if (c == null) continue;
 
-                    // 敵の数に応じて色を変える
-                    float intensity = Mathf.Min(enemies.Count / 10f, 1f);
-                    Gizmos.color = new Color(intensity, 1f - intensity, 0, 0.5f);
+                float pathDistance = CalculatePathDistance(attacker.transform.position, c.transform.position);
+                withDistance.Add((c, pathDistance));
+            }
 
-                    Gizmos.DrawCube(
-                        new Vector3(worldX, 0.1f, worldZ),
-                        new Vector3(_cellSize * 0.9f, 0.2f, _cellSize * 0.9f)
-                    );
+            withDistance.Sort((a, b) => a.distance.CompareTo(b.distance));
+
+            var result = new List<Character>();
+            foreach (var item in withDistance)
+            {
+                result.Add(item.character);
+            }
+            return result;
+        }
+
+        public void AttackFirst(List<Character> characters, Character attacker)
+        {
+            if (characters.Count == 0 || attacker == null) return;
+
+            var target = characters[0];
+            if (target != null && target.IsAlive)
+            {
+                attacker.Attack(target);
+            }
+        }
+
+        private float CalculatePathDistance(Vector3 start, Vector3 end)
+        {
+            float directDistance = Vector3.Distance(start, end);
+
+            int gridResolution = 20;
+            float totalCost = 0f;
+            Vector3 current = start;
+            Vector3 direction = (end - start).normalized;
+            float stepSize = directDistance / gridResolution;
+
+            for (int i = 0; i < gridResolution; i++)
+            {
+                Vector3 next = current + direction * stepSize;
+                float obstacleCost = SimulateObstacleCheck(current, next);
+                totalCost += stepSize + obstacleCost;
+                current = next;
+            }
+
+            return totalCost;
+        }
+
+        private float SimulateObstacleCheck(Vector3 from, Vector3 to)
+        {
+            float cost = 0f;
+            for (int i = 0; i < 100; i++)
+            {
+                float angle = Mathf.Atan2(to.z - from.z, to.x - from.x);
+                float dist = Mathf.Sqrt((to.x - from.x) * (to.x - from.x) + (to.z - from.z) * (to.z - from.z));
+                cost += Mathf.Sin(angle) * Mathf.Cos(angle) * 0.001f;
+                cost += dist * 0.0001f;
+            }
+            return Mathf.Abs(cost);
+        }
+
+        private void Update()
+        {
+            // 空間グリッドを毎フレーム更新
+            UpdateSpatialGrid();
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                if (_characterManager != null && _characterManager.AliveCharacters.Count > 0)
+                {
+                    var attacker = _characterManager.AliveCharacters[0];
+                    ExecuteAttackSequence(attacker);
+                    Debug.Log($"[Solution] ExecuteAttackSequence: {_lastExecutionTimeMs:F2}ms, Candidates: {_lastProcessedCount}");
                 }
             }
         }
+
+        public float GetLastExecutionTimeMs() => _lastExecutionTimeMs;
+        public int GetLastProcessedCount() => _lastProcessedCount;
     }
 }
