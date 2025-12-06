@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Build;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-namespace MassacreDojo.Editor
+namespace PerformanceTraining.Editor
 {
     /// <summary>
     /// 課題ファイルを展開するユーティリティ
@@ -113,7 +114,7 @@ namespace MassacreDojo.Editor
 
             // 名前空間を変更（学生用）
             content = content.Replace(
-                "namespace MassacreDojo.Exercises",
+                "namespace PerformanceTraining.Exercises",
                 "namespace StudentExercises");
 
             // ファイルを書き込み
@@ -226,13 +227,14 @@ namespace MassacreDojo.Editor
         /// </summary>
         private static void AddScriptingDefineSymbol(string symbol)
         {
-            var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+            var namedTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            PlayerSettings.GetScriptingDefineSymbols(namedTarget, out string[] definesArray);
+            var defines = string.Join(";", definesArray);
 
-            if (!defines.Split(';').Contains(symbol))
+            if (!definesArray.Contains(symbol))
             {
                 defines = string.IsNullOrEmpty(defines) ? symbol : $"{defines};{symbol}";
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, defines);
+                PlayerSettings.SetScriptingDefineSymbols(namedTarget, defines);
                 Debug.Log($"Added scripting define symbol: {symbol}");
             }
         }
@@ -242,13 +244,13 @@ namespace MassacreDojo.Editor
         /// </summary>
         private static void RemoveScriptingDefineSymbol(string symbol)
         {
-            var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
+            var namedTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            PlayerSettings.GetScriptingDefineSymbols(namedTarget, out string[] definesArray);
 
-            var symbolList = defines.Split(';').ToList();
+            var symbolList = definesArray.ToList();
             if (symbolList.Remove(symbol))
             {
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, string.Join(";", symbolList));
+                PlayerSettings.SetScriptingDefineSymbols(namedTarget, string.Join(";", symbolList));
                 Debug.Log($"Removed scripting define symbol: {symbol}");
             }
         }
@@ -258,9 +260,9 @@ namespace MassacreDojo.Editor
         /// </summary>
         public static bool IsExercisesDeployedSymbolDefined()
         {
-            var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            var defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup);
-            return defines.Split(';').Contains(EXERCISES_DEPLOYED_SYMBOL);
+            var namedTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            PlayerSettings.GetScriptingDefineSymbols(namedTarget, out string[] definesArray);
+            return definesArray.Contains(EXERCISES_DEPLOYED_SYMBOL);
         }
     }
 }

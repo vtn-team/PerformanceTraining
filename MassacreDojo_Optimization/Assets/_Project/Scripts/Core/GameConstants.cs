@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace MassacreDojo.Core
+namespace PerformanceTraining.Core
 {
     /// <summary>
     /// ゲーム全体の定数を管理するクラス

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MassacreDojo.Core;
-using EnemyClass = MassacreDojo.Enemy.Enemy;
+using PerformanceTraining.Core;
+using EnemyClass = PerformanceTraining.Enemy.Enemy;
 
 namespace StudentExercises.CPU
 {

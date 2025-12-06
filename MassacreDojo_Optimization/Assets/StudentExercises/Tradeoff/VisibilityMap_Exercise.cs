@@ -1,5 +1,5 @@
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
 namespace StudentExercises.Tradeoff
 {

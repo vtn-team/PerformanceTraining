@@ -1,29 +1,29 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using MassacreDojo.Core;
-using MassacreDojo.Enemy;
-using MassacreDojo.Player;
-using MassacreDojo.UI;
+using PerformanceTraining.Core;
+using PerformanceTraining.Enemy;
+using PerformanceTraining.Player;
+using PerformanceTraining.UI;
 
 #if EXERCISES_DEPLOYED
 using StudentExercises.Memory;
 using StudentExercises.CPU;
 using StudentExercises.Tradeoff;
 #else
-using MassacreDojo.Exercises.Memory;
-using MassacreDojo.Exercises.CPU;
-using MassacreDojo.Exercises.Tradeoff;
+using PerformanceTraining.Exercises.Memory;
+using PerformanceTraining.Exercises.CPU;
+using PerformanceTraining.Exercises.Tradeoff;
 #endif
 
-namespace MassacreDojo.Editor
+namespace PerformanceTraining.Editor
 {
     /// <summary>
     /// シーンの自動セットアップを行うウィザード
     /// </summary>
     public class SceneSetupWizard : EditorWindow
     {
-        [MenuItem("MassacreDojo/Scene Setup Wizard")]
+        // [MenuItem("PerformanceTraining/Scene Setup Wizard")] // シーンは展開済み
         public static void ShowWindow()
         {
             var window = GetWindow<SceneSetupWizard>("Scene Setup");

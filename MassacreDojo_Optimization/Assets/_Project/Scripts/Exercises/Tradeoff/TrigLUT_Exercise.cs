@@ -1,7 +1,7 @@
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
-namespace MassacreDojo.Exercises.Tradeoff
+namespace PerformanceTraining.Exercises.Tradeoff
 {
     /// <summary>
     /// 【課題3-C: 三角関数ルックアップテーブル】

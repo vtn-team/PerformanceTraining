@@ -1,10 +1,10 @@
 using System.Text;
 using UnityEngine;
 using UnityEngine.Profiling;
-using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using PerformanceTraining.Core;
+using PerformanceTraining.Enemy;
 
-namespace MassacreDojo.UI
+namespace PerformanceTraining.UI
 {
     /// <summary>
     /// パフォーマンス計測値を画面に表示するUI
@@ -72,8 +72,8 @@ namespace MassacreDojo.UI
 
         private void Start()
         {
-            enemySystem = FindObjectOfType<EnemySystem>();
-            aiManager = FindObjectOfType<EnemyAIManager>();
+            enemySystem = FindAnyObjectByType<EnemySystem>();
+            aiManager = FindAnyObjectByType<EnemyAIManager>();
             settings = GameManager.Instance?.Settings;
         }
 

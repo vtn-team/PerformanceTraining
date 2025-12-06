@@ -1,12 +1,12 @@
 using UnityEngine;
 
-namespace MassacreDojo.Core
+namespace PerformanceTraining.Core
 {
     /// <summary>
     /// 学習課題の進行状況を管理するScriptableObject
     /// 各最適化機能のON/OFFを切り替えて効果を確認できる
     /// </summary>
-    [CreateAssetMenu(fileName = "LearningSettings", menuName = "MassacreDojo/Learning Settings")]
+    [CreateAssetMenu(fileName = "LearningSettings", menuName = "PerformanceTraining/Learning Settings")]
     public class LearningSettings : ScriptableObject
     {
         [Header("=== 課題1: メモリ最適化 ===")]

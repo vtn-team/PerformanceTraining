@@ -1,8 +1,8 @@
 using UnityEngine;
-using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using PerformanceTraining.Core;
+using PerformanceTraining.Enemy;
 
-namespace MassacreDojo.UI
+namespace PerformanceTraining.UI
 {
     /// <summary>
     /// 敵スポーンUIコンポーネント
@@ -20,7 +20,7 @@ namespace MassacreDojo.UI
 
         private void Start()
         {
-            enemySystem = FindObjectOfType<EnemySystem>();
+            enemySystem = FindAnyObjectByType<EnemySystem>();
             windowId = GetInstanceID();
         }
 
@@ -94,11 +94,11 @@ namespace MassacreDojo.UI
         {
             if (enemySystem == null)
             {
-                enemySystem = FindObjectOfType<EnemySystem>();
+                enemySystem = FindAnyObjectByType<EnemySystem>();
                 if (enemySystem == null) return;
             }
 
-            var player = FindObjectOfType<Player.PlayerController>();
+            var player = FindAnyObjectByType<Player.PlayerController>();
             Vector3 center = player != null ? player.transform.position : Vector3.zero;
 
             for (int i = 0; i < count; i++)
@@ -123,7 +123,7 @@ namespace MassacreDojo.UI
         {
             if (enemySystem == null)
             {
-                enemySystem = FindObjectOfType<EnemySystem>();
+                enemySystem = FindAnyObjectByType<EnemySystem>();
                 if (enemySystem == null) return;
             }
 

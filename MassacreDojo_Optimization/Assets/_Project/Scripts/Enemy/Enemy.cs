@@ -1,7 +1,7 @@
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
-namespace MassacreDojo.Enemy
+namespace PerformanceTraining.Enemy
 {
     /// <summary>
     /// 敵の基本クラス
@@ -109,7 +109,7 @@ namespace MassacreDojo.Enemy
             }
 
             // EnemySystemに返却を通知
-            EnemySystem enemySystem = FindObjectOfType<EnemySystem>();
+            EnemySystem enemySystem = FindAnyObjectByType<EnemySystem>();
             if (enemySystem != null)
             {
                 enemySystem.ReturnEnemy(this);

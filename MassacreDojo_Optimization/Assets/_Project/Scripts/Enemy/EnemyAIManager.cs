@@ -1,14 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
 #if EXERCISES_DEPLOYED
 using StudentExercises.CPU;
 #else
-using MassacreDojo.Exercises.CPU;
+using PerformanceTraining.Exercises.CPU;
 #endif
 
-namespace MassacreDojo.Enemy
+namespace PerformanceTraining.Enemy
 {
     /// <summary>
     /// 敵AIの管理を行うシステム

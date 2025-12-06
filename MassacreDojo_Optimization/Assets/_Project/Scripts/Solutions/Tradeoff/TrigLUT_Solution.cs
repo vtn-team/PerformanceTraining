@@ -1,7 +1,7 @@
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
-namespace MassacreDojo.Solutions.Tradeoff
+namespace PerformanceTraining.Solutions.Tradeoff
 {
     /// <summary>
     /// 【解答】課題3-A: 三角関数ルックアップテーブル（LUT）

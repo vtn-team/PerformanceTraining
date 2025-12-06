@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
 #if EXERCISES_DEPLOYED
 using StudentExercises.Memory;
 #else
-using MassacreDojo.Exercises.Memory;
+using PerformanceTraining.Exercises.Memory;
 #endif
 
-namespace MassacreDojo.Enemy
+namespace PerformanceTraining.Enemy
 {
     /// <summary>
     /// 敵の生成・管理を行うシステム

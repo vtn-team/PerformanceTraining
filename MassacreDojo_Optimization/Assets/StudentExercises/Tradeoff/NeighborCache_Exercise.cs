@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MassacreDojo.Core;
-using EnemyClass = MassacreDojo.Enemy.Enemy;
-using EnemySystem = MassacreDojo.Enemy.EnemySystem;
+using PerformanceTraining.Core;
+using EnemyClass = PerformanceTraining.Enemy.Enemy;
+using EnemySystem = PerformanceTraining.Enemy.EnemySystem;
 
 namespace StudentExercises.Tradeoff
 {

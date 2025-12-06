@@ -6,7 +6,7 @@ using System.Text;
 using System.Security.Cryptography;
 using UnityEngine.Networking;
 
-namespace MassacreDojo.Editor
+namespace PerformanceTraining.Editor
 {
     /// <summary>
     /// テスト結果をサーバーに送信するシステム
@@ -19,10 +19,10 @@ namespace MassacreDojo.Editor
         private static string _apiKey = "";
 
         // EditorPrefsキー
-        private const string PREF_SERVER_URL = "MassacreDojo_ServerUrl";
-        private const string PREF_API_KEY = "MassacreDojo_ApiKey";
-        private const string PREF_STUDENT_ID = "MassacreDojo_StudentId";
-        private const string PREF_STUDENT_NAME = "MassacreDojo_StudentName";
+        private const string PREF_SERVER_URL = "PerformanceTraining_ServerUrl";
+        private const string PREF_API_KEY = "PerformanceTraining_ApiKey";
+        private const string PREF_STUDENT_ID = "PerformanceTraining_StudentId";
+        private const string PREF_STUDENT_NAME = "PerformanceTraining_StudentName";
 
         /// <summary>
         /// テスト結果データ構造
@@ -408,7 +408,7 @@ namespace MassacreDojo.Editor
         private string studentId;
         private string studentName;
 
-        [MenuItem("MassacreDojo/Submission Settings")]
+        // [MenuItem("PerformanceTraining/Submission Settings")] // 学生用UIはExerciseManagerWindowを使用
         public static void ShowWindow()
         {
             var window = GetWindow<SubmissionSettingsWindow>("Submission Settings");
@@ -418,7 +418,7 @@ namespace MassacreDojo.Editor
         private void OnEnable()
         {
             serverUrl = TestResultSubmitter.GetServerUrl();
-            apiKey = EditorPrefs.GetString("MassacreDojo_ApiKey", "");
+            apiKey = EditorPrefs.GetString("PerformanceTraining_ApiKey", "");
             studentId = TestResultSubmitter.GetStudentId();
             studentName = TestResultSubmitter.GetStudentName();
         }

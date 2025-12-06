@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MassacreDojo.Core;
-using EnemyClass = MassacreDojo.Enemy.Enemy;
-using EnemySystem = MassacreDojo.Enemy.EnemySystem;
+using PerformanceTraining.Core;
+using EnemyClass = PerformanceTraining.Enemy.Enemy;
+using EnemySystem = PerformanceTraining.Enemy.EnemySystem;
 
-namespace MassacreDojo.Solutions.Tradeoff
+namespace PerformanceTraining.Solutions.Tradeoff
 {
     /// <summary>
     /// 【解答】課題3-A: 近傍キャッシュ
@@ -111,7 +111,7 @@ namespace MassacreDojo.Solutions.Tradeoff
                 _tempList = new List<EnemyClass>(50);
             _tempList.Clear();
 
-            var enemySystem = FindObjectOfType<EnemySystem>();
+            var enemySystem = FindAnyObjectByType<EnemySystem>();
             if (enemySystem == null) return _tempList;
 
             Vector3 myPos = enemy.transform.position;

@@ -1,8 +1,8 @@
 using UnityEngine;
-using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using PerformanceTraining.Core;
+using PerformanceTraining.Enemy;
 
-namespace MassacreDojo.Player
+namespace PerformanceTraining.Player
 {
     /// <summary>
     /// プレイヤーの移動、攻撃、回避を制御するコントローラー
@@ -200,7 +200,7 @@ namespace MassacreDojo.Player
 
             // 攻撃範囲内の敵にダメージを与える
             Vector3 attackPosition = attackPoint.position;
-            EnemySystem enemySystem = FindObjectOfType<EnemySystem>();
+            EnemySystem enemySystem = FindAnyObjectByType<EnemySystem>();
 
             if (enemySystem != null)
             {

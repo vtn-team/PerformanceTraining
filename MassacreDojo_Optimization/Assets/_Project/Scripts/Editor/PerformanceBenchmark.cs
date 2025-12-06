@@ -4,11 +4,11 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using UnityEngine.Profiling;
-using MassacreDojo.Core;
-using MassacreDojo.Enemy;
+using PerformanceTraining.Core;
+using PerformanceTraining.Enemy;
 using Debug = UnityEngine.Debug;
 
-namespace MassacreDojo.Editor
+namespace PerformanceTraining.Editor
 {
     /// <summary>
     /// パフォーマンスベンチマークを実行するツール
@@ -17,7 +17,7 @@ namespace MassacreDojo.Editor
     {
         private static StringBuilder report = new StringBuilder();
 
-        [MenuItem("MassacreDojo/Run Benchmark %#b")]
+        // [MenuItem("PerformanceTraining/Run Benchmark %#b")] // 学生用UIはExerciseManagerWindowを使用
         public static void RunBenchmark()
         {
             if (!Application.isPlaying)
@@ -122,7 +122,7 @@ namespace MassacreDojo.Editor
             long before = GC.GetTotalMemory(false);
 
             // テスト用の処理を実行
-            var enemySystem = GameObject.FindObjectOfType<EnemySystem>();
+            var enemySystem = UnityEngine.Object.FindAnyObjectByType<EnemySystem>();
             if (enemySystem != null)
             {
                 // 10フレーム分の処理をシミュレート
@@ -156,13 +156,13 @@ namespace MassacreDojo.Editor
         /// <summary>
         /// Before/After比較用のスナップショットを保存
         /// </summary>
-        [MenuItem("MassacreDojo/Save Snapshot (Before)")]
+        // [MenuItem("PerformanceTraining/Save Snapshot (Before)")]
         public static void SaveSnapshotBefore()
         {
             SaveSnapshot("Before");
         }
 
-        [MenuItem("MassacreDojo/Save Snapshot (After)")]
+        // [MenuItem("PerformanceTraining/Save Snapshot (After)")]
         public static void SaveSnapshotAfter()
         {
             SaveSnapshot("After");
@@ -181,19 +181,19 @@ namespace MassacreDojo.Editor
             long memory = Profiler.GetTotalAllocatedMemoryLong();
             int enemyCount = GameManager.Instance?.CurrentEnemyCount ?? 0;
 
-            EditorPrefs.SetFloat($"MassacreDojo_{label}_FPS", fps);
-            EditorPrefs.SetFloat($"MassacreDojo_{label}_FrameTime", frameTime);
-            EditorPrefs.SetFloat($"MassacreDojo_{label}_Memory", memory);
-            EditorPrefs.SetInt($"MassacreDojo_{label}_Enemies", enemyCount);
+            EditorPrefs.SetFloat($"PerformanceTraining_{label}_FPS", fps);
+            EditorPrefs.SetFloat($"PerformanceTraining_{label}_FrameTime", frameTime);
+            EditorPrefs.SetFloat($"PerformanceTraining_{label}_Memory", memory);
+            EditorPrefs.SetInt($"PerformanceTraining_{label}_Enemies", enemyCount);
 
             Debug.Log($"スナップショット保存 ({label}): FPS={fps:F1}, Enemies={enemyCount}");
         }
 
-        [MenuItem("MassacreDojo/Compare Snapshots")]
+        // [MenuItem("PerformanceTraining/Compare Snapshots")]
         public static void CompareSnapshots()
         {
-            float beforeFPS = EditorPrefs.GetFloat("MassacreDojo_Before_FPS", 0);
-            float afterFPS = EditorPrefs.GetFloat("MassacreDojo_After_FPS", 0);
+            float beforeFPS = EditorPrefs.GetFloat("PerformanceTraining_Before_FPS", 0);
+            float afterFPS = EditorPrefs.GetFloat("PerformanceTraining_After_FPS", 0);
 
             if (beforeFPS == 0 || afterFPS == 0)
             {
@@ -201,10 +201,10 @@ namespace MassacreDojo.Editor
                 return;
             }
 
-            float beforeFrame = EditorPrefs.GetFloat("MassacreDojo_Before_FrameTime", 0);
-            float afterFrame = EditorPrefs.GetFloat("MassacreDojo_After_FrameTime", 0);
-            int beforeEnemies = EditorPrefs.GetInt("MassacreDojo_Before_Enemies", 0);
-            int afterEnemies = EditorPrefs.GetInt("MassacreDojo_After_Enemies", 0);
+            float beforeFrame = EditorPrefs.GetFloat("PerformanceTraining_Before_FrameTime", 0);
+            float afterFrame = EditorPrefs.GetFloat("PerformanceTraining_After_FrameTime", 0);
+            int beforeEnemies = EditorPrefs.GetInt("PerformanceTraining_Before_Enemies", 0);
+            int afterEnemies = EditorPrefs.GetInt("PerformanceTraining_After_Enemies", 0);
 
             var sb = new StringBuilder();
             sb.AppendLine("╔══════════════════════════════════════════════════════╗");

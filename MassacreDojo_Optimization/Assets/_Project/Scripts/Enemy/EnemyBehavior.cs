@@ -1,7 +1,7 @@
 using UnityEngine;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
-namespace MassacreDojo.Enemy
+namespace PerformanceTraining.Enemy
 {
     /// <summary>
     /// 敵の詳細行動を制御するクラス

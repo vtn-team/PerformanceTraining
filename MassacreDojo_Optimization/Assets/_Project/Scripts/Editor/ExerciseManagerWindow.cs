@@ -4,32 +4,71 @@ using UnityEditor.SceneManagement;
 using System.IO;
 using System.Collections.Generic;
 
-namespace MassacreDojo.Editor
+namespace PerformanceTraining.Editor
 {
+    /// <summary>
+    /// プロジェクト起動時にExercise Managerを自動で開く
+    /// </summary>
+    [InitializeOnLoad]
+    public static class ExerciseManagerAutoOpen
+    {
+        private const string AUTO_OPEN_KEY = "PerformanceTraining_ExerciseManager_AutoOpened";
+
+        static ExerciseManagerAutoOpen()
+        {
+            // エディタ起動後に遅延実行
+            EditorApplication.delayCall += OpenWindowOnce;
+        }
+
+        private static void OpenWindowOnce()
+        {
+            // このセッションで既に開いていたらスキップ
+            if (SessionState.GetBool(AUTO_OPEN_KEY, false))
+                return;
+
+            SessionState.SetBool(AUTO_OPEN_KEY, true);
+            ExerciseManagerWindow.ShowWindow();
+        }
+    }
+
     /// <summary>
     /// 課題管理ウィンドウ
     /// 各課題の目標・計測・ソースコードへの導線を提供
     /// </summary>
     public class ExerciseManagerWindow : EditorWindow
     {
-        // 課題タイプ
+        // 課題タイプ（3つの大課題）
         private enum ExerciseType
         {
-            Memory_ZeroAllocation,
+            Memory,     // 課題1: メモリ最適化
+            CPU,        // 課題2: CPU最適化
+            Tradeoff    // 課題3: トレードオフ
+        }
+
+        // Stepの識別子
+        private enum StepType
+        {
+            // Memory Steps
+            Memory_ObjectPool,
+            Memory_StringBuilder,
+            Memory_DelegateCache,
+            Memory_CollectionReuse,
+            // CPU Steps
             CPU_SpatialPartition,
             CPU_StaggeredUpdate,
             CPU_SqrMagnitude,
+            // Tradeoff Steps
             Tradeoff_NeighborCache,
             Tradeoff_DecisionCache,
             Tradeoff_TrigLUT,
             Tradeoff_VisibilityMap
         }
 
-        private ExerciseType selectedExercise = ExerciseType.Memory_ZeroAllocation;
+        private ExerciseType selectedExercise = ExerciseType.Memory;
         private Vector2 scrollPosition;
 
-        // テスト結果保存用
-        private static Dictionary<ExerciseType, bool> testResults = new Dictionary<ExerciseType, bool>();
+        // テスト結果保存用（Stepごと）
+        private static Dictionary<StepType, bool> stepTestResults = new Dictionary<StepType, bool>();
 
         // スタイル
         private GUIStyle headerStyle;
@@ -37,136 +76,109 @@ namespace MassacreDojo.Editor
         private GUIStyle labelStyle;
         private GUIStyle boldLabelStyle;
         private GUIStyle buttonStyle;
+        private GUIStyle stepLabelStyle;
         private bool stylesInitialized = false;
 
         // 課題情報構造体
         private struct ExerciseInfo
         {
             public string Title;
-            public string Category;
             public string Description;
-            public string Goal;
             public string TargetMetric;
             public string TargetBefore;
             public string TargetAfter;
             public string SourceFile;
             public string MeasurementType;
             public string TestMethodName;
+            public StepInfo[] Steps;
+            public HintInfo Hints; // 攻略のヒント
+        }
+
+        private struct StepInfo
+        {
+            public StepType Type;
+            public string Name;
+            public string Description;
+        }
+
+        // 攻略のヒント構造体
+        private struct HintInfo
+        {
+            public string ProfilerGuide;      // Profilerの使い方
+            public string CheckPoint;         // 確認すべきポイント
+            public int FixCount;              // 修正箇所の数
+            public string[] TargetFolders;    // 修正対象のフォルダ
         }
 
         private static readonly ExerciseInfo[] Exercises = new ExerciseInfo[]
         {
+            // 課題1: メモリ最適化
             new ExerciseInfo
             {
-                Title = "ゼロアロケーション",
-                Category = "Memory",
-                Description = "Update内でのGCアロケーションをゼロにする",
-                Goal = "オブジェクトプール、StringBuilder再利用、デリゲートキャッシュ、コレクション再利用を実装",
+                Title = "課題1: メモリ最適化（GC Alloc削減）",
+                Description = "毎フレーム発生しているGCアロケーションを削減する。\n文字列結合が原因でメモリ確保が発生している箇所を特定し、修正してください。",
                 TargetMetric = "GC Alloc (KB/frame)",
                 TargetBefore = "50+ KB/frame",
                 TargetAfter = "< 1 KB/frame",
-                SourceFile = "Exercises/Memory/ZeroAllocation_Exercise.cs",
+                SourceFile = "", // 自分で探す
                 MeasurementType = "Memory",
-                TestMethodName = "TestZeroAllocation"
+                TestMethodName = "TestZeroAllocation",
+                Steps = new StepInfo[] { }, // 実装項目は非表示
+                Hints = new HintInfo
+                {
+                    ProfilerGuide = "Window > Analysis > Profiler を開く\n" +
+                                   "CPU Usage モジュールを選択し、Hierarchy ビューで GC Alloc 列をクリックしてソート\n" +
+                                   "毎フレーム大量のアロケーションがある行をダブルクリックするとソースコードに飛べる",
+                    CheckPoint = "① 文字列結合（+ 演算子、string.Format、$補間文字列）を毎フレーム行っている箇所\n" +
+                                "② Instantiate/Destroy を毎回呼んでいる箇所（Object Pool化が必要）",
+                    FixCount = 5,
+                    TargetFolders = new string[] { "Scripts/Core/", "Scripts/AI/" }
+                }
             },
+            // 課題2: CPU最適化
             new ExerciseInfo
             {
-                Title = "空間分割（Spatial Partitioning）",
-                Category = "CPU",
-                Description = "O(n²)の総当たり検索をO(1)に近づける",
-                Goal = "グリッドベースの空間分割を実装し、近傍検索を高速化",
+                Title = "課題2: CPU最適化",
+                Description = "CPU負荷の高い処理を最適化する",
                 TargetMetric = "Frame Time (ms)",
                 TargetBefore = "40+ ms",
-                TargetAfter = "< 16 ms",
+                TargetAfter = "< 16 ms (60fps)",
                 SourceFile = "Exercises/CPU/CPUOptimization_Exercise.cs",
                 MeasurementType = "CPU",
-                TestMethodName = "TestSpatialPartition"
+                TestMethodName = "TestCPUOptimization",
+                Steps = new StepInfo[]
+                {
+                    new StepInfo { Type = StepType.CPU_SpatialPartition, Name = "Step 1: 空間分割", Description = "O(n²)をO(1)に近づける" },
+                    new StepInfo { Type = StepType.CPU_StaggeredUpdate, Name = "Step 2: 更新分散", Description = "負荷をフレーム間で分散" },
+                    new StepInfo { Type = StepType.CPU_SqrMagnitude, Name = "Step 3: 距離計算最適化", Description = "sqrMagnitudeで平方根を省略" }
+                }
             },
+            // 課題3: トレードオフ
             new ExerciseInfo
             {
-                Title = "更新分散（Staggered Update）",
-                Category = "CPU",
-                Description = "全敵が毎フレーム更新するのを避け、負荷を分散",
-                Goal = "グループごとに更新タイミングを分散させる",
-                TargetMetric = "Frame Time (ms)",
-                TargetBefore = "40+ ms",
-                TargetAfter = "< 16 ms",
-                SourceFile = "Exercises/CPU/CPUOptimization_Exercise.cs",
+                Title = "課題3: トレードオフ（メモリ vs CPU）",
+                Description = "メモリを消費してCPU計算を削減する各種キャッシュを実装",
+                TargetMetric = "Cache Hit Rate / 処理速度",
+                TargetBefore = "毎回計算",
+                TargetAfter = "キャッシュ使用（2-100倍高速）",
+                SourceFile = "Exercises/Tradeoff/",
                 MeasurementType = "CPU",
-                TestMethodName = "TestStaggeredUpdate"
-            },
-            new ExerciseInfo
-            {
-                Title = "距離計算の最適化",
-                Category = "CPU",
-                Description = "平方根計算を避けて高速化",
-                Goal = "sqrMagnitudeを使用して距離判定を最適化",
-                TargetMetric = "Frame Time (ms)",
-                TargetBefore = "40+ ms",
-                TargetAfter = "< 16 ms",
-                SourceFile = "Exercises/CPU/CPUOptimization_Exercise.cs",
-                MeasurementType = "CPU",
-                TestMethodName = "TestSqrMagnitude"
-            },
-            new ExerciseInfo
-            {
-                Title = "近傍キャッシュ",
-                Category = "Tradeoff",
-                Description = "メモリを消費して近傍検索のCPU計算を削減",
-                Goal = "各敵の近傍リストをキャッシュし、一定フレーム間再利用",
-                TargetMetric = "Cache Hit Rate",
-                TargetBefore = "0%",
-                TargetAfter = "> 80%",
-                SourceFile = "Exercises/Tradeoff/NeighborCache_Exercise.cs",
-                MeasurementType = "CPU",
-                TestMethodName = "TestNeighborCache"
-            },
-            new ExerciseInfo
-            {
-                Title = "AI判断キャッシュ",
-                Category = "Tradeoff",
-                Description = "メモリを消費してAI判断のCPU計算を削減",
-                Goal = "敵のAI判断結果を数フレームキャッシュ",
-                TargetMetric = "Cache Hit Rate",
-                TargetBefore = "0%",
-                TargetAfter = "> 80%",
-                SourceFile = "Exercises/Tradeoff/DecisionCache_Exercise.cs",
-                MeasurementType = "CPU",
-                TestMethodName = "TestDecisionCache"
-            },
-            new ExerciseInfo
-            {
-                Title = "三角関数LUT",
-                Category = "Tradeoff",
-                Description = "メモリを消費してSin/Cos計算を削減",
-                Goal = "Sin/Cosの値を事前計算してルックアップテーブルに格納",
-                TargetMetric = "Memory vs Speed",
-                TargetBefore = "毎回Mathf.Sin/Cos計算",
-                TargetAfter = "配列参照のみ（2-5倍高速）",
-                SourceFile = "Exercises/Tradeoff/TrigLUT_Exercise.cs",
-                MeasurementType = "CPU",
-                TestMethodName = "TestTrigLUT"
-            },
-            new ExerciseInfo
-            {
-                Title = "可視性マップ",
-                Category = "Tradeoff",
-                Description = "メモリを消費してRaycast計算を削減",
-                Goal = "2Dグリッドで各セルの可視性を事前計算",
-                TargetMetric = "Raycast削減",
-                TargetBefore = "毎回Raycast",
-                TargetAfter = "配列参照のみ（10-100倍高速）",
-                SourceFile = "Exercises/Tradeoff/VisibilityMap_Exercise.cs",
-                MeasurementType = "CPU",
-                TestMethodName = "TestVisibilityMap"
+                TestMethodName = "TestTradeoff",
+                Steps = new StepInfo[]
+                {
+                    new StepInfo { Type = StepType.Tradeoff_NeighborCache, Name = "3-A: 近傍キャッシュ", Description = "近傍リストをキャッシュ" },
+                    new StepInfo { Type = StepType.Tradeoff_DecisionCache, Name = "3-B: AI判断キャッシュ", Description = "AI判断結果をキャッシュ" },
+                    new StepInfo { Type = StepType.Tradeoff_TrigLUT, Name = "3-C: 三角関数LUT", Description = "Sin/Cosをルックアップテーブル化" },
+                    new StepInfo { Type = StepType.Tradeoff_VisibilityMap, Name = "3-D: 可視性マップ", Description = "Raycast結果を事前計算" }
+                }
             }
         };
 
-        [MenuItem("MassacreDojo/Exercise Manager &e")]
+        [MenuItem("PerformanceTraining/Exercise Manager &e")]
         public static void ShowWindow()
         {
             var window = GetWindow<ExerciseManagerWindow>("Exercise Manager");
-            window.minSize = new Vector2(550, 700);
+            window.minSize = new Vector2(550, 750);
         }
 
         private void InitStyles()
@@ -203,6 +215,12 @@ namespace MassacreDojo.Editor
                 fontSize = baseFontSize
             };
 
+            stepLabelStyle = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = baseFontSize,
+                padding = new RectOffset(20, 0, 0, 0)
+            };
+
             stylesInitialized = true;
         }
 
@@ -212,12 +230,12 @@ namespace MassacreDojo.Editor
 
             // ヘッダー
             EditorGUILayout.Space(15);
-            GUILayout.Label("MassacreDojo 最適化課題", headerStyle);
+            GUILayout.Label("PerformanceTraining 最適化課題", headerStyle);
             EditorGUILayout.Space(10);
 
             EditorGUILayout.HelpBox(
                 "各課題を選択し、目標値を確認してから実装に取り組んでください。\n" +
-                "「テスト」ボタンで実装が正しいか確認できます。",
+                "「テストを実行」ボタンで実装が正しいか確認できます。",
                 MessageType.Info);
 
             EditorGUILayout.Space(15);
@@ -233,39 +251,22 @@ namespace MassacreDojo.Editor
 
             // 選択した課題の詳細
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            DrawExerciseDetail((int)selectedExercise, Exercises[(int)selectedExercise]);
+            DrawExerciseDetail(Exercises[(int)selectedExercise]);
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawExerciseDetail(int index, ExerciseInfo info)
+        private void DrawExerciseDetail(ExerciseInfo info)
         {
             EditorGUILayout.Space(10);
 
-            // テスト結果チェックボックス（読み取り専用）
-            EditorGUILayout.BeginHorizontal();
-            bool passed = testResults.ContainsKey((ExerciseType)index) && testResults[(ExerciseType)index];
-
-            GUI.enabled = false;
-            EditorGUILayout.Toggle(passed, GUILayout.Width(20));
-            GUI.enabled = true;
-
-            GUILayout.Label($"【{info.Category}】{info.Title}", titleStyle);
-            EditorGUILayout.EndHorizontal();
-
+            // タイトル
+            GUILayout.Label(info.Title, titleStyle);
             EditorGUILayout.Space(10);
 
             // 説明
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label("概要", boldLabelStyle);
             GUILayout.Label(info.Description, labelStyle);
-            EditorGUILayout.EndVertical();
-
-            EditorGUILayout.Space(8);
-
-            // 目標
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.Label("実装目標", boldLabelStyle);
-            GUILayout.Label(info.Goal, labelStyle);
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.Space(12);
@@ -293,21 +294,109 @@ namespace MassacreDojo.Editor
 
             EditorGUILayout.EndVertical();
 
+            EditorGUILayout.Space(15);
+
+            // 攻略のヒント（課題1などで使用）
+            if (!string.IsNullOrEmpty(info.Hints.ProfilerGuide))
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label("攻略のヒント", boldLabelStyle);
+                EditorGUILayout.Space(5);
+
+                // Profilerの使い方
+                GUILayout.Label("【Profilerの使い方】", boldLabelStyle);
+                GUILayout.Label(info.Hints.ProfilerGuide, labelStyle);
+                EditorGUILayout.Space(8);
+
+                // 確認すべきポイント
+                GUILayout.Label("【確認すべきポイント】", boldLabelStyle);
+                GUILayout.Label(info.Hints.CheckPoint, labelStyle);
+                EditorGUILayout.Space(8);
+
+                // 修正箇所の数
+                GUILayout.Label("【修正箇所】", boldLabelStyle);
+                GUILayout.Label($"{info.Hints.FixCount} 箇所", labelStyle);
+                EditorGUILayout.Space(8);
+
+                // 対象フォルダ
+                if (info.Hints.TargetFolders != null && info.Hints.TargetFolders.Length > 0)
+                {
+                    GUILayout.Label("【対象フォルダ】", boldLabelStyle);
+                    foreach (var folder in info.Hints.TargetFolders)
+                    {
+                        GUILayout.Label($"• {folder}", stepLabelStyle);
+                    }
+                }
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.Space(15);
+            }
+
+            // Stepリスト（チェックボックス付き）- Stepsがある場合のみ表示
+            if (info.Steps != null && info.Steps.Length > 0)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label("実装項目", boldLabelStyle);
+                EditorGUILayout.Space(5);
+
+                foreach (var step in info.Steps)
+                {
+                    EditorGUILayout.BeginHorizontal();
+
+                    // テスト結果のチェックボックス（表示のみ、編集不可）
+                    bool passed = stepTestResults.ContainsKey(step.Type) && stepTestResults[step.Type];
+
+                    // チェックマークアイコンで表示（編集不可を明確に）
+                    var checkStyle = new GUIStyle(EditorStyles.label)
+                    {
+                        fontSize = Mathf.RoundToInt(14 * 1.25f),
+                        fixedWidth = 25
+                    };
+                    if (passed)
+                    {
+                        checkStyle.normal.textColor = new Color(0.3f, 0.8f, 0.3f);
+                        GUILayout.Label("✓", checkStyle);
+                    }
+                    else
+                    {
+                        checkStyle.normal.textColor = new Color(0.5f, 0.5f, 0.5f);
+                        GUILayout.Label("○", checkStyle);
+                    }
+
+                    // Step名と説明
+                    GUILayout.Label($"{step.Name}: {step.Description}", stepLabelStyle);
+
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                EditorGUILayout.EndVertical();
+            }
+
             EditorGUILayout.Space(20);
 
-            // アクションボタン
+            // アクションボタン（課題ごとに1セット）
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label("アクション", boldLabelStyle);
 
             EditorGUILayout.Space(8);
 
-            // ソースコードを開く
-            if (GUILayout.Button("ソースコードを開く", buttonStyle, GUILayout.Height(35)))
+            // ソースコードを開く（SourceFileがある場合のみ）
+            if (!string.IsNullOrEmpty(info.SourceFile))
             {
-                OpenSourceFile(info.SourceFile);
+                if (GUILayout.Button("ソースコードを開く", buttonStyle, GUILayout.Height(35)))
+                {
+                    OpenSourceFile(info.SourceFile);
+                }
+                EditorGUILayout.Space(8);
             }
-
-            EditorGUILayout.Space(8);
+            else
+            {
+                // 課題1のようにソースファイルを自分で探す課題の場合
+                EditorGUILayout.HelpBox(
+                    "Profilerを使って問題のあるソースコードを自分で見つけてください。",
+                    MessageType.Info);
+                EditorGUILayout.Space(8);
+            }
 
             // シーンを再生
             EditorGUILayout.BeginHorizontal();
@@ -326,13 +415,14 @@ namespace MassacreDojo.Editor
 
             EditorGUILayout.Space(8);
 
-            // テストボタン
-            var testButtonStyle = new GUIStyle(buttonStyle);
-            testButtonStyle.normal.textColor = new Color(0.2f, 0.6f, 1f);
-            if (GUILayout.Button("テストを実行", testButtonStyle, GUILayout.Height(35)))
+            // テストボタン（Unity Test Runner使用）
+            var testButtonColor = new Color(0.2f, 0.5f, 0.9f);
+            GUI.backgroundColor = testButtonColor;
+            if (GUILayout.Button("テストを実行", buttonStyle, GUILayout.Height(40)))
             {
-                RunTest((ExerciseType)index, info);
+                RunTestsWithTestRunner();
             }
+            GUI.backgroundColor = Color.white;
 
             EditorGUILayout.Space(8);
 
@@ -359,53 +449,47 @@ namespace MassacreDojo.Editor
                 GUILayout.Label("• Profiler > CPU > Frame Time を確認", labelStyle);
                 GUILayout.Label("• 重い処理（赤い部分）を特定する", labelStyle);
             }
+            EditorGUILayout.Space(5);
+            GUILayout.Label("【テストの実行】", boldLabelStyle);
+            GUILayout.Label("「テストを実行」ボタンで自動的にテストが開始されます", labelStyle);
             EditorGUILayout.EndVertical();
         }
 
         private void OpenSourceFile(string relativePath)
         {
-            // 複数のパスを試す
-            string[] pathsToTry = new string[]
+            // Tradeoffの場合はディレクトリなので特別処理
+            if (relativePath.EndsWith("/"))
             {
-                $"Assets/_Project/Scripts/{relativePath}",
-                $"Assets/StudentExercises/{relativePath.Replace("Exercises/", "")}",
-            };
-
-            foreach (var path in pathsToTry)
-            {
-                // Application.dataPathを使用して絶対パスを構築
-                string absolutePath = Path.Combine(Application.dataPath, "..", path).Replace("\\", "/");
-
-                if (File.Exists(absolutePath))
-                {
-                    var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(path);
-                    if (asset != null)
-                    {
-                        AssetDatabase.OpenAsset(asset);
-                        Debug.Log($"ソースファイルを開きました: {path}");
-                        return;
-                    }
-                }
+                // ディレクトリを開く場合は最初のファイルを開く
+                relativePath = "Exercises/Tradeoff/NeighborCache_Exercise.cs";
             }
 
-            // ファイルが見つからない場合、直接パスで開く
-            string defaultPath = $"Assets/_Project/Scripts/{relativePath}";
-            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", defaultPath));
+            string assetPath = $"Assets/_Project/Scripts/{relativePath}";
 
+            // MonoScriptとしてロード
+            var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(assetPath);
+            if (asset != null)
+            {
+                AssetDatabase.OpenAsset(asset);
+                Debug.Log($"ソースファイルを開きました: {assetPath}");
+                return;
+            }
+
+            // 見つからない場合は絶対パスで試す
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
             if (File.Exists(fullPath))
             {
-                // 外部エディタで開く
                 UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal(fullPath, 1);
                 Debug.Log($"外部エディタでファイルを開きました: {fullPath}");
+                return;
             }
-            else
-            {
-                Debug.LogError($"ファイルが見つかりません: {defaultPath}");
-                EditorUtility.DisplayDialog("エラー",
-                    $"ファイルが見つかりません:\n{defaultPath}\n\n" +
-                    "課題ファイルが展開されているか確認してください。",
-                    "OK");
-            }
+
+            // それでも見つからない場合
+            Debug.LogError($"ファイルが見つかりません: {assetPath}");
+            EditorUtility.DisplayDialog("エラー",
+                $"ファイルが見つかりません:\n{assetPath}\n\n" +
+                "課題ファイルが正しい場所にあるか確認してください。",
+                "OK");
         }
 
         private void PlayScene(string measurementType)
@@ -428,25 +512,29 @@ namespace MassacreDojo.Editor
             string sceneToLoad = null;
             foreach (var scenePath in scenePaths)
             {
-                if (File.Exists(Path.Combine(Application.dataPath, "..", scenePath)))
+                string fullScenePath = Path.Combine(Application.dataPath, "..", scenePath);
+                if (File.Exists(fullScenePath))
                 {
                     sceneToLoad = scenePath;
                     break;
                 }
             }
 
-            // シーンが見つからない場合は現在のシーンを使用
+            // シーンが見つからない場合
             if (sceneToLoad == null)
             {
                 var currentScene = EditorSceneManager.GetActiveScene();
                 if (string.IsNullOrEmpty(currentScene.path))
                 {
                     EditorUtility.DisplayDialog("エラー",
-                        "再生するシーンがありません。\n\n" +
-                        "MassacreDojo > Scene Setup Wizard でシーンを作成してください。",
+                        "再生するシーンが見つかりません。\n\n" +
+                        "MainGame.unityシーンを開くか、\n" +
+                        "PerformanceTraining > Scene Setup Wizard でシーンを作成してください。",
                         "OK");
                     return;
                 }
+                // 現在のシーンを使用
+                Debug.Log("現在のシーンを再生します");
             }
             else
             {
@@ -482,31 +570,21 @@ namespace MassacreDojo.Editor
             Debug.Log($"シーンを再生します（{measurementType}計測モード）");
         }
 
-        private void RunTest(ExerciseType exerciseType, ExerciseInfo info)
+        private void RunTestsWithTestRunner()
         {
-            Debug.Log($"テスト実行: {info.Title}");
+            // Unity Test Runner ウィンドウを開く
+            EditorApplication.ExecuteMenuItem("Window/General/Test Runner");
 
-            // テスト実行（ExerciseTestRunnerを呼び出す）
-            bool result = ExerciseTestRunner.RunSingleTest(info.TestMethodName);
-
-            // 結果を保存
-            testResults[exerciseType] = result;
-
-            // 結果表示
-            if (result)
+            // TestRunnerApiを使用してPlayModeテストを自動実行
+            var testRunnerApi = ScriptableObject.CreateInstance<UnityEditor.TestTools.TestRunner.Api.TestRunnerApi>();
+            var filter = new UnityEditor.TestTools.TestRunner.Api.Filter
             {
-                EditorUtility.DisplayDialog("テスト結果",
-                    $"【{info.Title}】\n\n✓ テスト成功！\n\n目標を達成しました。",
-                    "OK");
-            }
-            else
-            {
-                EditorUtility.DisplayDialog("テスト結果",
-                    $"【{info.Title}】\n\n✗ テスト失敗\n\nコードを確認して再度お試しください。",
-                    "OK");
-            }
+                testMode = UnityEditor.TestTools.TestRunner.Api.TestMode.PlayMode,
+                targetPlatform = null
+            };
 
-            Repaint();
+            Debug.Log("テストを実行します...");
+            testRunnerApi.Execute(new UnityEditor.TestTools.TestRunner.Api.ExecutionSettings(filter));
         }
 
         private void OpenProfiler(string measurementType)

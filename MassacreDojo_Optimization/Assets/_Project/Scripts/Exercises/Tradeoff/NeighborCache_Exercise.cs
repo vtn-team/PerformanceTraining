@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MassacreDojo.Core;
-using EnemyClass = MassacreDojo.Enemy.Enemy;
-using EnemySystem = MassacreDojo.Enemy.EnemySystem;
+using PerformanceTraining.Core;
+using EnemyClass = PerformanceTraining.Enemy.Enemy;
+using EnemySystem = PerformanceTraining.Enemy.EnemySystem;
 
-namespace MassacreDojo.Exercises.Tradeoff
+namespace PerformanceTraining.Exercises.Tradeoff
 {
     /// <summary>
     /// 【課題3-A: 近傍キャッシュ】
@@ -100,7 +100,7 @@ namespace MassacreDojo.Exercises.Tradeoff
             // 現在の実装（問題あり）: 毎回新しいListを生成
             var result = new List<EnemyClass>();
 
-            var enemySystem = FindObjectOfType<EnemySystem>();
+            var enemySystem = FindAnyObjectByType<EnemySystem>();
             if (enemySystem == null) return result;
 
             Vector3 myPos = enemy.transform.position;

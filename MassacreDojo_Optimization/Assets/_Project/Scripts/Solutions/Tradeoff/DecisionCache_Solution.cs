@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using MassacreDojo.Core;
-using EnemyClass = MassacreDojo.Enemy.Enemy;
-using EnemyState = MassacreDojo.Enemy.EnemyState;
+using PerformanceTraining.Core;
+using EnemyClass = PerformanceTraining.Enemy.Enemy;
+using EnemyState = PerformanceTraining.Enemy.EnemyState;
 
-namespace MassacreDojo.Solutions.Tradeoff
+namespace PerformanceTraining.Solutions.Tradeoff
 {
     /// <summary>
     /// 【解答】課題3-B: AI判断キャッシュ

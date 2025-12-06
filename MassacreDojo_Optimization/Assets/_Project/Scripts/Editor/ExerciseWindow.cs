@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Collections.Generic;
-using MassacreDojo.Core;
+using PerformanceTraining.Core;
 
-namespace MassacreDojo.Editor
+namespace PerformanceTraining.Editor
 {
     /// <summary>
     /// パフォーマンス最適化課題を表示・管理するEditorWindow
@@ -40,7 +40,7 @@ namespace MassacreDojo.Editor
         private GUIStyle incompleteStyle;
         private bool stylesInitialized = false;
 
-        [MenuItem("MassacreDojo/Exercise Window %#e")]
+        // [MenuItem("PerformanceTraining/Exercise Window %#e")] // 旧版 - ExerciseManagerWindowを使用
         public static void ShowWindow()
         {
             var window = GetWindow<ExerciseWindow>("Exercise Window");
@@ -867,7 +867,7 @@ if ((a - b).sqrMagnitude < 25f)  // 5² = 25");
         {
             if (!checkStates.ContainsKey(key))
             {
-                checkStates[key] = EditorPrefs.GetBool($"MassacreDojo_{key}", false);
+                checkStates[key] = EditorPrefs.GetBool($"PerformanceTraining_{key}", false);
             }
             return checkStates[key];
         }
@@ -875,7 +875,7 @@ if ((a - b).sqrMagnitude < 25f)  // 5² = 25");
         private void SetCheckState(string key, bool value)
         {
             checkStates[key] = value;
-            EditorPrefs.SetBool($"MassacreDojo_{key}", value);
+            EditorPrefs.SetBool($"PerformanceTraining_{key}", value);
         }
 
         private int CountChecks(string prefix)
@@ -911,7 +911,7 @@ if ((a - b).sqrMagnitude < 25f)  // 5² = 25");
 
             foreach (var key in keys)
             {
-                checkStates[key] = EditorPrefs.GetBool($"MassacreDojo_{key}", false);
+                checkStates[key] = EditorPrefs.GetBool($"PerformanceTraining_{key}", false);
             }
         }
 
@@ -919,26 +919,26 @@ if ((a - b).sqrMagnitude < 25f)  // 5² = 25");
         {
             foreach (var kvp in checkStates)
             {
-                EditorPrefs.SetBool($"MassacreDojo_{kvp.Key}", kvp.Value);
+                EditorPrefs.SetBool($"PerformanceTraining_{kvp.Key}", kvp.Value);
             }
         }
 
         private void LoadInitialMeasurements()
         {
-            hasMeasuredInitial = EditorPrefs.GetBool("MassacreDojo_HasInitial", false);
-            initialFPS = EditorPrefs.GetFloat("MassacreDojo_InitialFPS", 0);
-            initialGCAlloc = EditorPrefs.GetFloat("MassacreDojo_InitialGC", 0);
-            initialCPUTime = EditorPrefs.GetFloat("MassacreDojo_InitialCPU", 0);
-            initialDrawCalls = EditorPrefs.GetInt("MassacreDojo_InitialDC", 0);
+            hasMeasuredInitial = EditorPrefs.GetBool("PerformanceTraining_HasInitial", false);
+            initialFPS = EditorPrefs.GetFloat("PerformanceTraining_InitialFPS", 0);
+            initialGCAlloc = EditorPrefs.GetFloat("PerformanceTraining_InitialGC", 0);
+            initialCPUTime = EditorPrefs.GetFloat("PerformanceTraining_InitialCPU", 0);
+            initialDrawCalls = EditorPrefs.GetInt("PerformanceTraining_InitialDC", 0);
         }
 
         private void SaveInitialMeasurements()
         {
-            EditorPrefs.SetBool("MassacreDojo_HasInitial", hasMeasuredInitial);
-            EditorPrefs.SetFloat("MassacreDojo_InitialFPS", initialFPS);
-            EditorPrefs.SetFloat("MassacreDojo_InitialGC", initialGCAlloc);
-            EditorPrefs.SetFloat("MassacreDojo_InitialCPU", initialCPUTime);
-            EditorPrefs.SetInt("MassacreDojo_InitialDC", initialDrawCalls);
+            EditorPrefs.SetBool("PerformanceTraining_HasInitial", hasMeasuredInitial);
+            EditorPrefs.SetFloat("PerformanceTraining_InitialFPS", initialFPS);
+            EditorPrefs.SetFloat("PerformanceTraining_InitialGC", initialGCAlloc);
+            EditorPrefs.SetFloat("PerformanceTraining_InitialCPU", initialCPUTime);
+            EditorPrefs.SetInt("PerformanceTraining_InitialDC", initialDrawCalls);
         }
 
         private void RecordInitialMeasurements()
