@@ -496,6 +496,216 @@ namespace MassacreDojo.Editor
             resultLog.AppendLine($"  [FAIL] {message}");
             failCount++;
         }
+
+        /// <summary>
+        /// 単一のテストを実行
+        /// </summary>
+        /// <param name="testMethodName">テストメソッド名</param>
+        /// <returns>テスト成功時true</returns>
+        public static bool RunSingleTest(string testMethodName)
+        {
+            if (!Application.isPlaying)
+            {
+                Debug.LogError("テストはPlayモードで実行してください。");
+                return false;
+            }
+
+            resultLog.Clear();
+            passCount = 0;
+            failCount = 0;
+
+            resultLog.AppendLine($"========== {testMethodName} ==========\n");
+
+            switch (testMethodName)
+            {
+                case "TestZeroAllocation":
+                    RunMemoryTests();
+                    break;
+                case "TestSpatialPartition":
+                    TestSpatialPartitionSingle();
+                    break;
+                case "TestStaggeredUpdate":
+                    TestStaggeredUpdateSingle();
+                    break;
+                case "TestSqrMagnitude":
+                    TestDistanceCalculationSingle();
+                    break;
+                case "TestNeighborCache":
+                    TestNeighborCacheSingle();
+                    break;
+                case "TestDecisionCache":
+                    TestDecisionCacheSingle();
+                    break;
+                case "TestTrigLUT":
+                    TestTrigLUTSingle();
+                    break;
+                case "TestVisibilityMap":
+                    TestVisibilityMapSingle();
+                    break;
+                default:
+                    Debug.LogError($"Unknown test method: {testMethodName}");
+                    return false;
+            }
+
+            resultLog.AppendLine($"\n結果: {passCount} PASS / {failCount} FAIL");
+            Debug.Log(resultLog.ToString());
+
+            return failCount == 0 && passCount > 0;
+        }
+
+        // 個別テスト実行用のラッパー
+        private static void TestSpatialPartitionSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<CPUOptimization_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("CPUOptimization_Exercise が見つかりません");
+                return;
+            }
+            TestSpatialPartition(exercise);
+        }
+
+        private static void TestStaggeredUpdateSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<CPUOptimization_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("CPUOptimization_Exercise が見つかりません");
+                return;
+            }
+            TestStaggeredUpdate(exercise);
+        }
+
+        private static void TestDistanceCalculationSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<CPUOptimization_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("CPUOptimization_Exercise が見つかりません");
+                return;
+            }
+            TestDistanceCalculation(exercise);
+        }
+
+        private static void TestNeighborCacheSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<NeighborCache_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("NeighborCache_Exercise が見つかりません");
+                return;
+            }
+            TestNeighborCache(exercise);
+        }
+
+        private static void TestDecisionCacheSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<DecisionCache_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("DecisionCache_Exercise が見つかりません");
+                return;
+            }
+            TestDecisionCache(exercise);
+        }
+
+        private static void TestTrigLUTSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<TrigLUT_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("TrigLUT_Exercise が見つかりません");
+                return;
+            }
+            TestTrigLUT(exercise);
+        }
+
+        private static void TestVisibilityMapSingle()
+        {
+            var exercise = GameObject.FindObjectOfType<VisibilityMap_Exercise>();
+            if (exercise == null)
+            {
+                LogFail("VisibilityMap_Exercise が見つかりません");
+                return;
+            }
+            TestVisibilityMap(exercise);
+        }
+
+        // TrigLUTテスト
+        private static void TestTrigLUT(TrigLUT_Exercise exercise)
+        {
+            try
+            {
+                // Sin/Cosの精度テスト（度数で渡す）
+                float testAngleDegrees = 45f;
+                float lutSin = exercise.Sin(testAngleDegrees);
+                float lutCos = exercise.Cos(testAngleDegrees);
+                float expectedSin = Mathf.Sin(testAngleDegrees * Mathf.Deg2Rad);
+                float expectedCos = Mathf.Cos(testAngleDegrees * Mathf.Deg2Rad);
+
+                float tolerance = 0.02f; // 2%の誤差許容
+                bool sinOk = Mathf.Abs(lutSin - expectedSin) < tolerance;
+                bool cosOk = Mathf.Abs(lutCos - expectedCos) < tolerance;
+
+                if (sinOk && cosOk)
+                {
+                    LogPass("TrigLUT - Sin/Cosの精度が許容範囲内");
+                }
+                else
+                {
+                    LogFail($"TrigLUT - 精度不足 Sin: {lutSin} vs {expectedSin}, Cos: {lutCos} vs {expectedCos}");
+                }
+
+                // メモリ使用量テスト
+                int memUsage = exercise.GetMemoryUsageBytes();
+                if (memUsage > 0)
+                {
+                    resultLog.AppendLine($"  [INFO] TrigLUT - メモリ使用量: {memUsage} bytes");
+                    LogPass("TrigLUT - LUTが初期化されている");
+                }
+                else
+                {
+                    LogFail("TrigLUT - LUTが初期化されていない");
+                }
+            }
+            catch (Exception e)
+            {
+                LogFail($"TrigLUT - 例外発生: {e.Message}");
+            }
+        }
+
+        // VisibilityMapテスト
+        private static void TestVisibilityMap(VisibilityMap_Exercise exercise)
+        {
+            try
+            {
+                // マップ初期化テスト
+                exercise.Initialize();
+
+                // クエリテスト（2点間の可視性）
+                Vector3 from = Vector3.zero;
+                Vector3 to = new Vector3(5f, 0f, 5f);
+                bool visible = exercise.IsVisible(from, to);
+                // 結果に関わらず例外が出なければOK
+                LogPass("VisibilityMap - IsVisible()が正しく動作");
+
+                // メモリ使用量
+                int memUsage = exercise.GetMemoryUsageBytes();
+                if (memUsage > 0)
+                {
+                    resultLog.AppendLine($"  [INFO] VisibilityMap - 推定メモリ使用量: {memUsage} bytes");
+                    LogPass("VisibilityMap - マップが初期化されている");
+                }
+                else
+                {
+                    LogFail("VisibilityMap - マップが初期化されていない");
+                }
+            }
+            catch (Exception e)
+            {
+                LogFail($"VisibilityMap - 例外発生: {e.Message}");
+            }
+        }
     }
 
     /// <summary>

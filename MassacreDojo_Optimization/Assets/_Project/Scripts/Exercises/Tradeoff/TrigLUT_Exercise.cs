@@ -4,20 +4,17 @@ using MassacreDojo.Core;
 namespace MassacreDojo.Exercises.Tradeoff
 {
     /// <summary>
-    /// 【課題3-A: 三角関数ルックアップテーブル（LUT）】
+    /// 【課題3-C: 三角関数ルックアップテーブル】
     ///
-    /// 目標: メモリを消費してCPU計算を削減する
+    /// 目標: メモリを消費してSin/Cos計算を削減する
     ///
     /// トレードオフ:
-    /// - メモリ: +2.8KB（360エントリ × 4バイト × 2テーブル）
-    /// - CPU: 2-5倍高速化
+    /// - メモリ使用量: +2.8KB（360エントリ × 4バイト × 2テーブル）
+    /// - CPU削減効果: 2-5倍高速化
+    /// - 代償: 1度単位の精度（補間なしの場合）
     ///
-    /// 使用場面:
-    /// - 敵の包囲行動（プレイヤーを囲む位置計算）
-    /// - 待機モーション（ボビング、揺れ）
-    /// - 旋回移動（弧を描いて接近）
-    ///
-    /// TODO: Sin/Cosの値を事前計算してテーブルに格納してください
+    /// 確認方法:
+    /// - Sin/Cos呼び出し時のCPU時間を比較
     /// </summary>
     public class TrigLUT_Exercise : MonoBehaviour
     {
@@ -25,31 +22,23 @@ namespace MassacreDojo.Exercises.Tradeoff
         // ルックアップテーブル
         // ========================================================
 
-        // TODO: ここにSin/Cosのテーブルを宣言してください
-        // private float[] _sinTable;
-        // private float[] _cosTable;
+        // TODO: Sin/Cosテーブルを宣言
+
 
         private int _tableSize = GameConstants.TRIG_LUT_SIZE;
         private bool _isInitialized = false;
 
 
-        /// <summary>
-        /// テーブルを初期化する
-        /// </summary>
+        // ========================================================
+        // 初期化
+        // ========================================================
+
         public void Initialize()
         {
             if (_isInitialized) return;
 
-            // TODO: Sin/Cosテーブルを事前計算してください
-            // ヒント:
-            // 1. _sinTable = new float[_tableSize];
-            // 2. _cosTable = new float[_tableSize];
-            // 3. for (int i = 0; i < _tableSize; i++)
-            //    {
-            //        float rad = i * Mathf.Deg2Rad;
-            //        _sinTable[i] = Mathf.Sin(rad);
-            //        _cosTable[i] = Mathf.Cos(rad);
-            //    }
+            // TODO: Sin/Cosテーブルを事前計算
+            // 0度～359度の値を配列に格納
 
             _isInitialized = true;
         }
@@ -60,74 +49,49 @@ namespace MassacreDojo.Exercises.Tradeoff
         }
 
 
+        // ========================================================
+        // テーブル参照
+        // ========================================================
+
         /// <summary>
         /// 角度からテーブルインデックスを計算する
         /// </summary>
-        /// <param name="angleDegrees">角度（度）</param>
-        /// <returns>テーブルインデックス（0〜359）</returns>
         public int AngleToIndex(float angleDegrees)
         {
-            // TODO: 角度をインデックスに変換してください
-            // ヒント:
-            // 1. 角度を0〜360の範囲に正規化
-            // 2. 負の角度も正しく処理する（例: -90 → 270）
-            // 3. 360は0として扱う
-
-            // 仮実装 - これを置き換えてください
+            // TODO: 角度を0-359の範囲に正規化してインデックスに変換
+            // 負の角度も正しく処理する必要がある
             int index = Mathf.RoundToInt(angleDegrees) % 360;
             if (index < 0) index += 360;
             return index;
         }
 
-
         /// <summary>
-        /// Sin値を取得する（LUT使用）
+        /// Sin値を取得する
         /// </summary>
-        /// <param name="angleDegrees">角度（度）</param>
-        /// <returns>Sin値</returns>
         public float Sin(float angleDegrees)
         {
-            // TODO: テーブルからSin値を取得してください
-            // ヒント:
-            // 1. AngleToIndex() でインデックスを取得
-            // 2. _sinTable[index] を返す
-
-            // 仮実装（直接計算 - 問題あり）- これを置き換えてください
+            // 現在の実装（問題あり）: 毎回計算
+            // TODO: テーブルから値を取得
             return Mathf.Sin(angleDegrees * Mathf.Deg2Rad);
         }
 
-
         /// <summary>
-        /// Cos値を取得する（LUT使用）
+        /// Cos値を取得する
         /// </summary>
-        /// <param name="angleDegrees">角度（度）</param>
-        /// <returns>Cos値</returns>
         public float Cos(float angleDegrees)
         {
-            // TODO: テーブルからCos値を取得してください
-            // ヒント:
-            // 1. AngleToIndex() でインデックスを取得
-            // 2. _cosTable[index] を返す
-
-            // 仮実装（直接計算 - 問題あり）- これを置き換えてください
+            // 現在の実装（問題あり）: 毎回計算
+            // TODO: テーブルから値を取得
             return Mathf.Cos(angleDegrees * Mathf.Deg2Rad);
         }
 
-
         /// <summary>
-        /// Sin/Cos値を同時に取得する（さらに効率的）
+        /// Sin/Cos値を同時に取得する（効率的）
         /// </summary>
-        /// <param name="angleDegrees">角度（度）</param>
-        /// <param name="sin">出力: Sin値</param>
-        /// <param name="cos">出力: Cos値</param>
         public void SinCos(float angleDegrees, out float sin, out float cos)
         {
-            // TODO: 一度のインデックス計算で両方の値を取得してください
-            // ヒント:
-            // 1. インデックスを1回だけ計算
-            // 2. _sinTable と _cosTable から取得
-
-            // 仮実装（直接計算 - 問題あり）- これを置き換えてください
+            // 現在の実装（問題あり）: 毎回計算
+            // TODO: 1回のインデックス計算で両方取得
             float rad = angleDegrees * Mathf.Deg2Rad;
             sin = Mathf.Sin(rad);
             cos = Mathf.Cos(rad);
@@ -135,49 +99,17 @@ namespace MassacreDojo.Exercises.Tradeoff
 
 
         // ========================================================
-        // 発展課題: 線形補間によるLUT
-        // ========================================================
-        // より高精度が必要な場合、隣接する2つのエントリを
-        // 線形補間することで精度を上げられます
-
-        /// <summary>
-        /// 線形補間を使用してSin値を取得する（発展課題）
-        /// </summary>
-        /// <param name="angleDegrees">角度（度）</param>
-        /// <returns>補間されたSin値</returns>
-        public float SinLerp(float angleDegrees)
-        {
-            // TODO（発展）: 線形補間でより高精度なSin値を取得
-            // ヒント:
-            // 1. 角度の小数部分を取得
-            // 2. 前後のインデックスの値を取得
-            // 3. Mathf.Lerp で補間
-
-            return Sin(angleDegrees);
-        }
-
-
-        // ========================================================
-        // デバッグ・計測用
+        // デバッグ
         // ========================================================
 
-        /// <summary>
-        /// テーブルのメモリ使用量を計算する（バイト）
-        /// </summary>
-        /// <returns>メモリ使用量</returns>
         public int GetMemoryUsageBytes()
         {
-            // float配列2つ × テーブルサイズ × 4バイト
             return _tableSize * sizeof(float) * 2;
         }
 
-        /// <summary>
-        /// 計算精度をテストする
-        /// </summary>
         public void TestAccuracy()
         {
             float maxError = 0f;
-
             for (int i = 0; i < 360; i++)
             {
                 float lutSin = Sin(i);
@@ -185,9 +117,7 @@ namespace MassacreDojo.Exercises.Tradeoff
                 float error = Mathf.Abs(lutSin - realSin);
                 maxError = Mathf.Max(maxError, error);
             }
-
-            Debug.Log($"TrigLUT Max Error: {maxError}");
-            Debug.Log($"TrigLUT Memory: {GetMemoryUsageBytes()} bytes ({GetMemoryUsageBytes() / 1024f:F2} KB)");
+            Debug.Log($"TrigLUT - Max Error: {maxError}, Memory: {GetMemoryUsageBytes()} bytes");
         }
     }
 }

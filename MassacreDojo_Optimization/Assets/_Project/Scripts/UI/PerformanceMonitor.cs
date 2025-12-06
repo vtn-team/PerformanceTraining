@@ -12,12 +12,20 @@ namespace MassacreDojo.UI
     /// </summary>
     public class PerformanceMonitor : MonoBehaviour
     {
+        public enum MeasurementMode
+        {
+            All,        // 全項目表示
+            Memory,     // メモリ関連を強調
+            CPU         // CPU関連を強調
+        }
+
         [Header("表示設定")]
         [SerializeField] private bool showMonitor = true;
+        [SerializeField] private MeasurementMode measurementMode = MeasurementMode.All;
         [SerializeField] private bool showDetailedInfo = false;
-        [SerializeField] private bool showOptimizationStatus = true;
+        [SerializeField] private bool showOptimizationStatus = false;
         [SerializeField] private KeyCode toggleKey = KeyCode.F5;
-        [SerializeField] private KeyCode detailToggleKey = KeyCode.F6;
+        [SerializeField] private KeyCode modeToggleKey = KeyCode.F6;
 
         [Header("位置・サイズ")]
         [SerializeField] private Vector2 position = new Vector2(10, 10);
@@ -76,7 +84,12 @@ namespace MassacreDojo.UI
             {
                 showMonitor = !showMonitor;
             }
-            if (Input.GetKeyDown(detailToggleKey))
+            if (Input.GetKeyDown(modeToggleKey))
+            {
+                // モード切り替え
+                measurementMode = (MeasurementMode)(((int)measurementMode + 1) % 3);
+            }
+            if (Input.GetKeyDown(KeyCode.F7))
             {
                 showDetailedInfo = !showDetailedInfo;
             }
@@ -157,17 +170,11 @@ namespace MassacreDojo.UI
 
             InitStyles();
 
-            float lineHeight = 18f;
+            float lineHeight = 20f;
             float padding = 10f;
-            int lineCount = 0;
 
-            // ライン数をカウント
-            lineCount += 2; // ヘッダー
-            lineCount += 5; // 基本情報
-            if (showDetailedInfo) lineCount += 4;
-            if (showOptimizationStatus) lineCount += 12;
-            lineCount += 2; // キー説明
-
+            // モードに応じた表示内容を決定
+            int lineCount = CalculateLineCount();
             float height = lineCount * lineHeight + padding * 2;
             Rect boxRect = new Rect(position.x, position.y, size.x, height);
 
@@ -177,89 +184,151 @@ namespace MassacreDojo.UI
             float x = position.x + padding;
             float labelWidth = size.x - padding * 2;
 
-            // ヘッダー
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "Performance Monitor", headerStyle);
-            y += lineHeight;
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "━━━━━━━━━━━━━━━━━", labelStyle);
-            y += lineHeight;
-
-            // FPS
-            bool fpsGood = lastFps >= 60;
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                $"FPS: {lastFps:F1}", fpsGood ? goodStyle : badStyle);
+            // ヘッダー（モード表示）
+            string modeText = measurementMode switch
+            {
+                MeasurementMode.Memory => "Memory Mode",
+                MeasurementMode.CPU => "CPU Mode",
+                _ => "All Metrics"
+            };
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), $"Performance Monitor [{modeText}]", headerStyle);
             y += lineHeight;
 
-            // Frame Time
-            bool frameTimeGood = frameTime < 16.67f;
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                $"Frame Time: {frameTime:F2} ms", frameTimeGood ? goodStyle : badStyle);
+            // 区切り線
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "━━━━━━━━━━━━━━━━━━━", labelStyle);
             y += lineHeight;
 
-            // GC Alloc (推定)
-            bool gcGood = gcAllocThisFrame < 10f; // 10KB/s以下
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                $"GC Alloc: ~{gcAllocThisFrame:F1} KB/s", gcGood ? goodStyle : badStyle);
-            y += lineHeight;
-
-            // Enemy Count
+            // 敵の数（常に表示）
             int enemyCount = GameManager.Instance?.CurrentEnemyCount ?? 0;
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                $"Enemies: {enemyCount}", labelStyle);
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), $"Enemies: {enemyCount}", labelStyle);
             y += lineHeight;
 
-            // Kill Count
-            int killCount = GameManager.Instance?.KillCount ?? 0;
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                $"Kills: {killCount}", labelStyle);
-            y += lineHeight;
+            // モード別の表示
+            if (measurementMode == MeasurementMode.Memory || measurementMode == MeasurementMode.All)
+            {
+                DrawMemoryMetrics(ref y, x, labelWidth, lineHeight);
+            }
+
+            if (measurementMode == MeasurementMode.CPU || measurementMode == MeasurementMode.All)
+            {
+                DrawCPUMetrics(ref y, x, labelWidth, lineHeight);
+            }
 
             // 詳細情報
             if (showDetailedInfo)
             {
-                GUI.Label(new Rect(x, y, labelWidth, lineHeight), "── Detail ──", labelStyle);
-                y += lineHeight;
-
-                GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                    $"Total Memory: {totalMemory / 1024 / 1024} MB", labelStyle);
-                y += lineHeight;
-
-                GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                    $"Reserved: {usedMemory / 1024 / 1024} MB", labelStyle);
-                y += lineHeight;
-
-                float aiTime = aiManager?.GetLastUpdateTimeMs() ?? 0;
-                GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                    $"AI Update: {aiTime:F2} ms", labelStyle);
-                y += lineHeight;
+                DrawDetailedInfo(ref y, x, labelWidth, lineHeight);
             }
 
             // 最適化ステータス
             if (showOptimizationStatus && settings != null)
             {
-                GUI.Label(new Rect(x, y, labelWidth, lineHeight), "── Optimizations ──", labelStyle);
-                y += lineHeight;
-
-                // メモリ最適化
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Object Pool", settings.useObjectPool);
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "StringBuilder", settings.useStringBuilder);
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Delegate Cache", settings.useDelegateCache);
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Collection Reuse", settings.useCollectionReuse);
-
-                // CPU最適化
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Spatial Partition", settings.useSpatialPartition);
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Staggered Update", settings.useStaggeredUpdate);
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "SqrMagnitude", settings.useSqrMagnitude);
-
-                // トレードオフ
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Trig LUT", settings.useTrigLUT);
-                DrawOptStatus(ref y, x, labelWidth, lineHeight, "Visibility Map", settings.useVisibilityMap);
+                DrawOptimizationStatus(ref y, x, labelWidth, lineHeight);
             }
 
             // キー説明
-            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "━━━━━━━━━━━━━━━━━", labelStyle);
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "━━━━━━━━━━━━━━━━━━━", labelStyle);
             y += lineHeight;
             GUI.Label(new Rect(x, y, labelWidth, lineHeight),
-                $"[{toggleKey}] Toggle | [{detailToggleKey}] Detail | [F4] All Opt", labelStyle);
+                $"[{toggleKey}] Toggle | [{modeToggleKey}] Mode | [F7] Detail", labelStyle);
+        }
+
+        private int CalculateLineCount()
+        {
+            int count = 4; // ヘッダー + 区切り + 敵数 + キー説明x2
+
+            if (measurementMode == MeasurementMode.Memory || measurementMode == MeasurementMode.All)
+                count += 4; // メモリ関連
+            if (measurementMode == MeasurementMode.CPU || measurementMode == MeasurementMode.All)
+                count += 4; // CPU関連
+            if (showDetailedInfo)
+                count += 4;
+            if (showOptimizationStatus && settings != null)
+                count += 10;
+
+            return count;
+        }
+
+        private void DrawMemoryMetrics(ref float y, float x, float labelWidth, float lineHeight)
+        {
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "── Memory ──", labelStyle);
+            y += lineHeight;
+
+            // GC Alloc (推定) - 重要指標
+            bool gcGood = gcAllocThisFrame < 10f;
+            string gcStatus = gcGood ? "GOOD" : "要改善";
+            GUIStyle gcStyle = gcGood ? goodStyle : badStyle;
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"GC Alloc: {gcAllocThisFrame:F1} KB/s [{gcStatus}]", gcStyle);
+            y += lineHeight;
+
+            // 総メモリ
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"Total Memory: {totalMemory / 1024 / 1024} MB", labelStyle);
+            y += lineHeight;
+        }
+
+        private void DrawCPUMetrics(ref float y, float x, float labelWidth, float lineHeight)
+        {
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "── CPU ──", labelStyle);
+            y += lineHeight;
+
+            // FPS - 重要指標
+            bool fpsGood = lastFps >= 60;
+            string fpsStatus = fpsGood ? "GOOD" : "要改善";
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"FPS: {lastFps:F1} [{fpsStatus}]", fpsGood ? goodStyle : badStyle);
+            y += lineHeight;
+
+            // Frame Time - 重要指標
+            bool frameTimeGood = frameTime < 16.67f;
+            string ftStatus = frameTimeGood ? "GOOD" : "要改善";
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"Frame Time: {frameTime:F2} ms [{ftStatus}]", frameTimeGood ? goodStyle : badStyle);
+            y += lineHeight;
+
+            // AI更新時間
+            float aiTime = aiManager?.GetLastUpdateTimeMs() ?? 0;
+            bool aiGood = aiTime < 5f;
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"AI Update: {aiTime:F2} ms", aiGood ? goodStyle : badStyle);
+            y += lineHeight;
+        }
+
+        private void DrawDetailedInfo(ref float y, float x, float labelWidth, float lineHeight)
+        {
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "── Detail ──", labelStyle);
+            y += lineHeight;
+
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"Reserved Memory: {usedMemory / 1024 / 1024} MB", labelStyle);
+            y += lineHeight;
+
+            int killCount = GameManager.Instance?.KillCount ?? 0;
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight),
+                $"Kills: {killCount}", labelStyle);
+            y += lineHeight;
+        }
+
+        private void DrawOptimizationStatus(ref float y, float x, float labelWidth, float lineHeight)
+        {
+            GUI.Label(new Rect(x, y, labelWidth, lineHeight), "── Optimizations ──", labelStyle);
+            y += lineHeight;
+
+            // メモリ最適化
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Object Pool", settings.useObjectPool);
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "StringBuilder", settings.useStringBuilder);
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Delegate Cache", settings.useDelegateCache);
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Collection Reuse", settings.useCollectionReuse);
+
+            // CPU最適化
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Spatial Partition", settings.useSpatialPartition);
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Staggered Update", settings.useStaggeredUpdate);
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "SqrMagnitude", settings.useSqrMagnitude);
+
+            // トレードオフ
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Trig LUT", settings.useTrigLUT);
+            DrawOptStatus(ref y, x, labelWidth, lineHeight, "Visibility Map", settings.useVisibilityMap);
         }
 
         private void DrawOptStatus(ref float y, float x, float labelWidth, float lineHeight, string name, bool enabled)
@@ -268,6 +337,27 @@ namespace MassacreDojo.UI
             GUIStyle style = enabled ? goodStyle : badStyle;
             GUI.Label(new Rect(x, y, labelWidth, lineHeight), $"  {status} {name}", style);
             y += lineHeight;
+        }
+
+        /// <summary>
+        /// 計測モードを設定する
+        /// </summary>
+        public void SetMeasurementMode(MeasurementMode mode)
+        {
+            measurementMode = mode;
+        }
+
+        /// <summary>
+        /// 計測モードを設定する（文字列版）
+        /// </summary>
+        public void SetMeasurementMode(string modeString)
+        {
+            measurementMode = modeString switch
+            {
+                "Memory" => MeasurementMode.Memory,
+                "CPU" => MeasurementMode.CPU,
+                _ => MeasurementMode.All
+            };
         }
 
         /// <summary>

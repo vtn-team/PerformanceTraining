@@ -6,30 +6,28 @@ using EnemyClass = MassacreDojo.Enemy.Enemy;
 namespace MassacreDojo.Exercises.CPU
 {
     /// <summary>
-    /// 【課題2: CPU計算キャッシュ】
+    /// 【課題2: CPU計算最適化】
     ///
     /// 目標: CPU負荷の高い処理を最適化する
     ///
-    /// このクラスには3つのStepがあります。
-    /// 各Stepの「TODO:」コメントを見つけて、コードを実装してください。
-    ///
     /// 確認方法:
     /// - Profiler > CPU > Frame Time を確認
-    /// - Before: 40ms+ → After: 15ms以下
+    /// - 目標: 40+ ms → 16ms以下（60fps維持）
+    ///
+    /// このクラスには3つのStepがあります。
+    /// 各Stepのメソッドを実装してください。
     /// </summary>
     public class CPUOptimization_Exercise : MonoBehaviour
     {
         // ========================================================
         // Step 1: 空間分割（Spatial Partitioning）
         // ========================================================
-        // 目的: O(n²)の総当たり検索をO(1)に近づける
-        //
-        // TODO: グリッドベースの空間分割を実装してください
+        // 問題: 全敵との距離計算はO(n²)の計算量
+        // 解決: グリッドで空間を分割し、近傍セルのみ検索する
 
-        // TODO: ここにグリッド用のDictionaryを宣言してください
-        // private Dictionary<int, List<EnemyClass>> _spatialGrid;
+        // TODO: グリッド用のデータ構造を宣言
 
-        // グリッドの設定
+
         private float _cellSize = GameConstants.CELL_SIZE;
         private int _gridWidth = GameConstants.GRID_SIZE;
 
@@ -37,54 +35,30 @@ namespace MassacreDojo.Exercises.CPU
         /// <summary>
         /// 空間グリッドを更新する
         /// </summary>
-        /// <param name="enemies">全敵リスト</param>
         public void UpdateSpatialGrid(List<EnemyClass> enemies)
         {
-            // TODO: グリッドを更新してください
-            // ヒント:
-            // 1. _spatialGrid が null なら初期化
-            // 2. 各セルの List を Clear()
-            // 3. 各敵の位置からセルインデックスを計算
-            // 4. 該当セルの List に敵を追加
-
-            // 仮実装（何もしない）- これを置き換えてください
+            // TODO: 各敵をグリッドに登録する
+            // 1. グリッドをクリア
+            // 2. 各敵の位置からセルを計算
+            // 3. 該当セルに敵を追加
         }
 
         /// <summary>
         /// 座標からセルインデックスを取得する
         /// </summary>
-        /// <param name="position">ワールド座標</param>
-        /// <returns>セルインデックス（1次元化）</returns>
         public int GetCellIndex(Vector3 position)
         {
-            // TODO: 座標からセルインデックスを計算してください
-            // ヒント:
-            // 1. フィールド中心がorigin（0,0）として計算
-            // 2. x = (position.x + FIELD_HALF_SIZE) / _cellSize
-            // 3. z = (position.z + FIELD_HALF_SIZE) / _cellSize
-            // 4. index = z * _gridWidth + x
-            // 5. 範囲外はクランプする
-
-            // 仮実装 - これを置き換えてください
+            // TODO: ワールド座標を1次元のセルインデックスに変換
+            // フィールド範囲: -FIELD_HALF_SIZE ～ +FIELD_HALF_SIZE
             return 0;
         }
 
         /// <summary>
         /// 指定位置周辺の敵を取得する
         /// </summary>
-        /// <param name="position">中心座標</param>
-        /// <returns>周辺の敵リスト</returns>
         public List<EnemyClass> QueryNearbyEnemies(Vector3 position)
         {
-            // TODO: 周辺9セル（3x3）から敵を取得してください
-            // ヒント:
-            // 1. 結果用の List を用意（再利用推奨）
-            // 2. 中心セルのx,zインデックスを計算
-            // 3. x-1〜x+1, z-1〜z+1 の9セルをループ
-            // 4. 各セルの敵をリストに追加
-            // 5. 範囲外チェックを忘れずに
-
-            // 仮実装（空リストを返す）- これを置き換えてください
+            // TODO: 周辺9セル（3x3）から敵を取得
             return new List<EnemyClass>();
         }
 
@@ -92,26 +66,18 @@ namespace MassacreDojo.Exercises.CPU
         // ========================================================
         // Step 2: 更新分散（Staggered Update）
         // ========================================================
-        // 目的: 全敵が毎フレーム更新するのを避け、負荷を分散する
-        //
-        // TODO: グループごとに更新タイミングを分散してください
+        // 問題: 全敵が毎フレーム重い処理を実行すると負荷が集中する
+        // 解決: グループに分けて更新タイミングをずらす
 
         /// <summary>
         /// このフレームで更新すべきかどうかを判定する
         /// </summary>
-        /// <param name="group">敵のグループ番号（0〜AI_UPDATE_GROUPS-1）</param>
+        /// <param name="group">敵のグループ番号（0～AI_UPDATE_GROUPS-1）</param>
         /// <param name="frameCount">現在のフレーム番号</param>
-        /// <returns>更新すべきならtrue</returns>
         public bool ShouldUpdateThisFrame(int group, int frameCount)
         {
-            // TODO: グループに応じて更新タイミングを分散してください
-            // ヒント:
-            // 1. frameCount % AI_UPDATE_GROUPS == group なら更新
-            // 2. これにより各グループは10フレームに1回だけ重い処理を実行
-            // 3. 例: グループ0はフレーム0,10,20...で更新
-            //        グループ1はフレーム1,11,21...で更新
-
-            // 仮実装（毎フレーム更新）- これを置き換えてください
+            // 現在の実装（問題あり）: 全員が毎フレーム更新
+            // TODO: グループごとに更新フレームを分散させる
             return true;
         }
 
@@ -119,43 +85,25 @@ namespace MassacreDojo.Exercises.CPU
         // ========================================================
         // Step 3: 距離計算の最適化
         // ========================================================
-        // 目的: 平方根計算を避けて高速化する
-        //
-        // TODO: sqrMagnitudeを使って距離計算を最適化してください
+        // 問題: Vector3.Distance()は内部で平方根（Sqrt）を計算する
+        // 解決: sqrMagnitudeを使用して平方根計算を省略する
 
         /// <summary>
         /// 2点間の距離の2乗を計算する
         /// </summary>
-        /// <param name="a">点A</param>
-        /// <param name="b">点B</param>
-        /// <returns>距離の2乗</returns>
         public float CalculateDistanceSqr(Vector3 a, Vector3 b)
         {
-            // TODO: sqrMagnitudeを使って距離の2乗を計算してください
-            // ヒント:
-            // 1. Vector3.Distance() は内部で平方根（Sqrt）を計算
-            // 2. sqrMagnitude は平方根を計算しないので高速
-            // 3. 比較時は閾値も2乗する必要がある
-
-            // 仮実装（Distance使用 - 問題あり）- これを置き換えてください
+            // 現在の実装（問題あり）: 平方根を計算している
             return Vector3.Distance(a, b);
         }
 
         /// <summary>
         /// 2点間の距離が指定値以下かどうかを判定する
         /// </summary>
-        /// <param name="a">点A</param>
-        /// <param name="b">点B</param>
-        /// <param name="maxDistance">最大距離</param>
-        /// <returns>距離が maxDistance 以下なら true</returns>
         public bool IsWithinDistance(Vector3 a, Vector3 b, float maxDistance)
         {
-            // TODO: sqrMagnitudeを使って距離判定してください
-            // ヒント:
-            // 1. 閾値を2乗して比較
-            // 2. (a - b).sqrMagnitude <= maxDistance * maxDistance
-
-            // 仮実装（Distance使用 - 問題あり）- これを置き換えてください
+            // 現在の実装（問題あり）: 平方根を計算している
+            // TODO: 平方根を計算せずに距離判定する
             return Vector3.Distance(a, b) <= maxDistance;
         }
 
@@ -166,7 +114,6 @@ namespace MassacreDojo.Exercises.CPU
 
         private void OnDrawGizmos()
         {
-            // 空間分割グリッドを可視化
             if (GameManager.Instance?.Settings?.showSpatialGrid == true)
             {
                 Gizmos.color = new Color(0, 1, 0, 0.3f);
