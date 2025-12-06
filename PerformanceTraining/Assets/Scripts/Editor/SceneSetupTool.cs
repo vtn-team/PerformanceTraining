@@ -65,16 +65,16 @@ namespace PerformanceTraining.Editor
         /// </summary>
         private static void CreateAllCharacterPrefabs()
         {
-            string prefabDir = "Assets/_Project/Prefabs/Characters";
+            string prefabDir = "Assets/Prefabs/Characters";
 
             // ディレクトリ作成
-            if (!AssetDatabase.IsValidFolder("Assets/_Project/Prefabs"))
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
             {
-                AssetDatabase.CreateFolder("Assets/_Project", "Prefabs");
+                AssetDatabase.CreateFolder("Assets", "Prefabs");
             }
             if (!AssetDatabase.IsValidFolder(prefabDir))
             {
-                AssetDatabase.CreateFolder("Assets/_Project/Prefabs", "Characters");
+                AssetDatabase.CreateFolder("Assets/Prefabs", "Characters");
             }
 
             var types = (CharacterType[])System.Enum.GetValues(typeof(CharacterType));
@@ -196,12 +196,12 @@ namespace PerformanceTraining.Editor
         /// </summary>
         private static void CreateCharacterPrefabListAsset(CharacterType[] types, System.Collections.Generic.List<GameObject>[] prefabsByType)
         {
-            string assetPath = "Assets/_Project/Resources/CharacterPrefabList.asset";
+            string assetPath = "Assets/Resources/CharacterPrefabList.asset";
 
             // Resourcesフォルダ作成
-            if (!AssetDatabase.IsValidFolder("Assets/_Project/Resources"))
+            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
             {
-                AssetDatabase.CreateFolder("Assets/_Project", "Resources");
+                AssetDatabase.CreateFolder("Assets", "Resources");
             }
 
             // ScriptableObject作成
@@ -243,17 +243,17 @@ namespace PerformanceTraining.Editor
         /// </summary>
         private static void CreateCharacterPrefab()
         {
-            string prefabDir = "Assets/_Project/Prefabs/Characters";
+            string prefabDir = "Assets/Prefabs/Characters";
             string prefabPath = prefabDir + "/Character.prefab";
 
             // ディレクトリ作成
-            if (!AssetDatabase.IsValidFolder("Assets/_Project/Prefabs"))
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
             {
-                AssetDatabase.CreateFolder("Assets/_Project", "Prefabs");
+                AssetDatabase.CreateFolder("Assets", "Prefabs");
             }
             if (!AssetDatabase.IsValidFolder(prefabDir))
             {
-                AssetDatabase.CreateFolder("Assets/_Project/Prefabs", "Characters");
+                AssetDatabase.CreateFolder("Assets/Prefabs", "Characters");
             }
 
             // 既存チェック
@@ -395,17 +395,17 @@ namespace PerformanceTraining.Editor
         /// </summary>
         private static void CreateAttackEffectPrefab()
         {
-            string prefabDir = "Assets/_Project/Prefabs/Effects";
+            string prefabDir = "Assets/Prefabs/Effects";
             string prefabPath = prefabDir + "/AttackEffect.prefab";
 
             // ディレクトリ作成
-            if (!AssetDatabase.IsValidFolder("Assets/_Project/Prefabs"))
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
             {
-                AssetDatabase.CreateFolder("Assets/_Project", "Prefabs");
+                AssetDatabase.CreateFolder("Assets", "Prefabs");
             }
             if (!AssetDatabase.IsValidFolder(prefabDir))
             {
-                AssetDatabase.CreateFolder("Assets/_Project/Prefabs", "Effects");
+                AssetDatabase.CreateFolder("Assets/Prefabs", "Effects");
             }
 
             // 既存チェック
@@ -451,13 +451,13 @@ namespace PerformanceTraining.Editor
 
         private static void CreateMainGameScene()
         {
-            string sceneDir = "Assets/_Project/Scenes";
+            string sceneDir = "Assets/Scenes";
             string scenePath = sceneDir + "/MainGame.unity";
 
             // ディレクトリ作成
             if (!AssetDatabase.IsValidFolder(sceneDir))
             {
-                AssetDatabase.CreateFolder("Assets/_Project", "Scenes");
+                AssetDatabase.CreateFolder("Assets", "Scenes");
             }
 
             // 既存チェック
@@ -476,18 +476,18 @@ namespace PerformanceTraining.Editor
             Scene newScene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
             // CharacterPrefabListを取得
-            string prefabListPath = "Assets/_Project/Resources/CharacterPrefabList.asset";
+            string prefabListPath = "Assets/Resources/CharacterPrefabList.asset";
             CharacterPrefabList prefabList = AssetDatabase.LoadAssetAtPath<CharacterPrefabList>(prefabListPath);
 
             // フォールバック用の単一プレハブを取得
-            string fallbackPrefabPath = "Assets/_Project/Prefabs/Characters/Character.prefab";
+            string fallbackPrefabPath = "Assets/Prefabs/Characters/Character.prefab";
             GameObject fallbackPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(fallbackPrefabPath);
 
             // どちらもない場合はエラー
             if (prefabList == null && fallbackPrefab == null)
             {
                 // タイプ別プレハブがあるか確認（新形式: バリエーション付き）
-                string warriorPath = "Assets/_Project/Prefabs/Characters/Character_Warrior_01.prefab";
+                string warriorPath = "Assets/Prefabs/Characters/Character_Warrior_01.prefab";
                 fallbackPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(warriorPath);
 
                 if (fallbackPrefab == null)
@@ -501,7 +501,7 @@ namespace PerformanceTraining.Editor
             }
 
             // AttackEffect Prefabを取得
-            string attackEffectPath = "Assets/_Project/Prefabs/Effects/AttackEffect.prefab";
+            string attackEffectPath = "Assets/Prefabs/Effects/AttackEffect.prefab";
             GameObject attackEffectPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(attackEffectPath);
 
             if (attackEffectPrefab == null)

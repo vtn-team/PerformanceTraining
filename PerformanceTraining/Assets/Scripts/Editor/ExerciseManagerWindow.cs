@@ -464,7 +464,7 @@ namespace PerformanceTraining.Editor
                 relativePath = "Exercises/Tradeoff/NeighborCache_Exercise.cs";
             }
 
-            string assetPath = $"Assets/_Project/Scripts/{relativePath}";
+            string assetPath = $"Assets/Scripts/{relativePath}";
 
             // MonoScriptとしてロード
             var asset = AssetDatabase.LoadAssetAtPath<MonoScript>(assetPath);
@@ -504,9 +504,9 @@ namespace PerformanceTraining.Editor
             // メインシーンを探す
             string[] scenePaths = new string[]
             {
-                "Assets/_Project/Scenes/MainGame.unity",
                 "Assets/Scenes/MainGame.unity",
-                "Assets/_Project/Scenes/Main.unity",
+                "Assets/Scenes/MainGame.unity",
+                "Assets/Scenes/Main.unity",
             };
 
             string sceneToLoad = null;

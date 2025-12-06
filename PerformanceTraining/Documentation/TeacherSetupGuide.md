@@ -74,7 +74,7 @@ Outputs:
 
 ### 2.1 配布するもの
 
-1. **Unityプロジェクト** (`MassacreDojo_Optimization` フォルダ)
+1. **Unityプロジェクト** (`PerformanceTraining` フォルダ)
 2. **サーバーURL** (SubmitUrl)
 3. **APIキー**
 4. **セットアップ手順書** (`Documentation/SetupGuide.md`)
@@ -83,7 +83,7 @@ Outputs:
 
 ```
 配布フォルダ/
-├── MassacreDojo_Optimization/   # Unityプロジェクト
+├── PerformanceTraining/        # Unityプロジェクト
 ├── SetupGuide.pdf              # セットアップ手順（PDF化）
 └── ServerInfo.txt              # サーバー情報
 ```
@@ -230,7 +230,7 @@ VALID_API_KEYS: "class-a-key,class-b-key,class-c-key"
 
 ### 6.2 課題内容の変更
 
-1. `Assets/_Project/Scripts/Exercises/` 内のファイルを編集
+1. `Assets/Scripts/Exercises/` 内のファイルを編集
 2. 対応する Solution ファイルも更新
 3. ExerciseWindow.cs の表示内容を更新
 4. ExerciseTestRunner.cs のテストを更新

@@ -962,14 +962,14 @@ if ((a - b).sqrMagnitude < 25f)  // 5² = 25");
         private void CreateLearningSettings()
         {
             // Resourcesフォルダを確認/作成
-            string resourcesPath = "Assets/_Project/Resources";
+            string resourcesPath = "Assets/Resources";
             if (!AssetDatabase.IsValidFolder(resourcesPath))
             {
-                if (!AssetDatabase.IsValidFolder("Assets/_Project"))
+                if (!AssetDatabase.IsValidFolder("Assets"))
                 {
-                    AssetDatabase.CreateFolder("Assets", "_Project");
+                    AssetDatabase.CreateFolder("Assets", "");
                 }
-                AssetDatabase.CreateFolder("Assets/_Project", "Resources");
+                AssetDatabase.CreateFolder("Assets", "Resources");
             }
 
             // LearningSettingsを作成

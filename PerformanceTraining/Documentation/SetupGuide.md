@@ -1,4 +1,4 @@
-# MassacreDojo パフォーマンス最適化学習プログラム
+# PerformanceTraining パフォーマンス最適化学習プログラム
 # セットアップ手順書
 
 ## 目次
@@ -38,7 +38,7 @@
 
 1. Unity Hub を起動
 2. 「Open」→「Add project from disk」を選択
-3. `MassacreDojo_Optimization` フォルダを選択
+3. `PerformanceTraining` フォルダを選択
 4. Unity 2022.3.x で開く
 
 ### 2.2 初回起動時の確認
@@ -47,18 +47,17 @@
 
 ```
 Assets/
-├── _Project/
-│   ├── Scripts/
-│   │   ├── Core/           # ゲームコア
-│   │   ├── Enemy/          # 敵システム
-│   │   ├── Player/         # プレイヤー
-│   │   ├── Exercises/      # 課題ファイル（元ファイル）
-│   │   ├── Solutions/      # 解答（教員用）
-│   │   └── Editor/         # エディタツール
-│   ├── Prefabs/
-│   ├── Scenes/
-│   └── Resources/
-└── StudentExercises/       # ← 課題展開後に作成される
+├── Scripts/
+│   ├── Core/           # ゲームコア
+│   ├── AI/             # AIシステム
+│   ├── Character/      # キャラクター
+│   ├── Exercises/      # 課題ファイル（元ファイル）
+│   ├── Solutions/      # 解答（教員用）
+│   └── Editor/         # エディタツール
+├── Prefabs/
+├── Scenes/
+├── Resources/
+└── StudentExercises/   # ← 課題展開後に作成される
 ```
 
 ### 2.3 必要なパッケージの確認
@@ -74,7 +73,7 @@ Window → Package Manager を開き、以下がインストールされてい�
 
 ### 3.1 Exercise Window を開く
 
-**メニュー**: `MassacreDojo` → `Exercise Window`
+**メニュー**: `PerformanceTraining` → `Exercise Window`
 
 または **ショートカット**: `Ctrl + Shift + E`
 
@@ -86,11 +85,11 @@ Window → Package Manager を開き、以下がインストールされてい�
 
 1. Exercise Window の「概要」タブを開く
 2. 「LearningSettingsを作成」ボタンをクリック
-3. `Assets/_Project/Resources/LearningSettings.asset` が作成される
+3. `Assets/Resources/LearningSettings.asset` が作成される
 
 ### 3.3 学生情報の設定（結果送信用）
 
-1. **メニュー**: `MassacreDojo` → `Submission Settings`
+1. **メニュー**: `PerformanceTraining` → `Submission Settings`
 2. 以下を入力：
    - **学生ID**: 学籍番号
    - **氏名**: フルネーム
@@ -142,7 +141,7 @@ Assets/StudentExercises/
 
 ### 5.1 シーンの準備
 
-1. `Assets/_Project/Scenes/MainScene` を開く
+1. `Assets/Scenes/MainGame.unity` を開く
 2. Play ボタンでゲームを開始
 3. 敵をスポーン（UI の「+100」ボタン等）
 
@@ -225,7 +224,7 @@ Assets/StudentExercises/
 **原因**: サーバー設定が正しくない
 
 **解決方法**:
-1. `MassacreDojo` → `Submission Settings` を開く
+1. `PerformanceTraining` → `Submission Settings` を開く
 2. サーバーURL が正しいか確認（https:// で始まる）
 3. APIキーが正しいか確認
 4. インターネット接続を確認
@@ -261,8 +260,8 @@ Assets/StudentExercises/
 
 | メニュー | 機能 |
 |---------|------|
-| `MassacreDojo` → `Exercise Window` | 課題ウィンドウ |
-| `MassacreDojo` → `Submission Settings` | 送信設定 |
+| `PerformanceTraining` → `Exercise Window` | 課題ウィンドウ |
+| `PerformanceTraining` → `Submission Settings` | 送信設定 |
 | `Window` → `Analysis` → `Profiler` | プロファイラー |
 | `Window` → `Analysis` → `Frame Debugger` | フレームデバッガー |
 

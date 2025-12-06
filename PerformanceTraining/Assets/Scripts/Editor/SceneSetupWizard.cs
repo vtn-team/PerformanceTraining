@@ -92,8 +92,8 @@ namespace PerformanceTraining.Editor
             SetupCurrentScene();
 
             // シーンを保存
-            string path = "Assets/_Project/Scenes/MainGame.unity";
-            EnsureDirectoryExists("Assets/_Project/Scenes");
+            string path = "Assets/Scenes/MainGame.unity";
+            EnsureDirectoryExists("Assets/Scenes");
             EditorSceneManager.SaveScene(scene, path);
 
             Debug.Log($"シーンを作成しました: {path}");
@@ -170,8 +170,8 @@ namespace PerformanceTraining.Editor
             renderer.material = material;
 
             // マテリアルを保存
-            EnsureDirectoryExists("Assets/_Project/Art/Materials");
-            AssetDatabase.CreateAsset(material, "Assets/_Project/Art/Materials/FieldMaterial.mat");
+            EnsureDirectoryExists("Assets/Art/Materials");
+            AssetDatabase.CreateAsset(material, "Assets/Art/Materials/FieldMaterial.mat");
 
             Debug.Log("Field を作成しました");
         }

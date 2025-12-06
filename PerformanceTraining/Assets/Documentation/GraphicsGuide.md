@@ -18,7 +18,7 @@
 ### 手順
 
 1. **敵のマテリアルを選択**
-   - `Assets/_Project/Art/Materials/EnemyMaterial` を選択
+   - `Assets/Art/Materials/EnemyMaterial` を選択
    - または敵Prefabのマテリアルを直接選択
 
 2. **GPU Instancingを有効化**
@@ -49,7 +49,7 @@
 ### 手順
 
 1. **敵Prefabを開く**
-   - `Assets/_Project/Prefabs/Enemy` をダブルクリック
+   - `Assets/Prefabs/Enemy` をダブルクリック
 
 2. **LODGroupコンポーネントを追加**
    - 敵のルートオブジェクトを選択

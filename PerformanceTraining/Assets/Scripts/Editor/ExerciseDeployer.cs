@@ -19,8 +19,8 @@ namespace PerformanceTraining.Editor
         // 展開時に追加するスクリプティング定義シンボル
         private const string EXERCISES_DEPLOYED_SYMBOL = "EXERCISES_DEPLOYED";
 
-        // ソースファイルのパス（_Project内のExercises）
-        private static readonly string SourcePath = "Assets/_Project/Scripts/Exercises";
+        // ソースファイルのパス
+        private static readonly string SourcePath = "Assets/Scripts/Exercises";
 
         // 展開先パス
         private static readonly string DestinationPath = $"Assets/{EXERCISE_FOLDER_NAME}";
