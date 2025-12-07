@@ -67,7 +67,7 @@ MonoBehaviour:
     width: 3057.6
     height: 1622.4
   m_ShowMode: 4
-  m_Title: Project
+  m_Title: Inspector
   m_RootView: {fileID: 8}
   m_MinSize: {x: 875, y: 306}
   m_MaxSize: {x: 10000, y: 10000}
@@ -91,8 +91,8 @@ MonoBehaviour:
     y: 0
     width: 574.4
     height: 741.6
-  m_MinSize: {x: 50, y: 76}
-  m_MaxSize: {x: 4000, y: 4026}
+  m_MinSize: {x: 50, y: 50}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 21}
   m_Panes:
   - {fileID: 21}
@@ -121,7 +121,7 @@ MonoBehaviour:
   m_MinSize: {x: 50, y: 76}
   m_MaxSize: {x: 4000, y: 4026}
   vertical: 0
-  controlID: 6785
+  controlID: 38
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -142,8 +142,8 @@ MonoBehaviour:
     y: 0
     width: 551.2
     height: 776
-  m_MinSize: {x: 550, y: 776}
-  m_MaxSize: {x: 4000, y: 4026}
+  m_MinSize: {x: 550, y: 750}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 22}
   m_Panes:
   - {fileID: 22}
@@ -172,7 +172,7 @@ MonoBehaviour:
   m_MinSize: {x: 550, y: 776}
   m_MaxSize: {x: 4000, y: 4026}
   vertical: 0
-  controlID: 6743
+  controlID: 16
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -269,7 +269,7 @@ MonoBehaviour:
   m_MinSize: {x: 400, y: 100}
   m_MaxSize: {x: 32384, y: 16192}
   vertical: 0
-  controlID: 2054
+  controlID: 98
   draggingID: 0
 --- !u!114 &12
 MonoBehaviour:
@@ -295,7 +295,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 1
-  controlID: 1975
+  controlID: 99
   draggingID: 0
 --- !u!114 &13
 MonoBehaviour:
@@ -322,7 +322,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 50}
   m_MaxSize: {x: 24288, y: 8096}
   vertical: 0
-  controlID: 1976
+  controlID: 100
   draggingID: 0
 --- !u!114 &14
 MonoBehaviour:
@@ -343,8 +343,8 @@ MonoBehaviour:
     y: 0
     width: 505.6
     height: 884.8
-  m_MinSize: {x: 201, y: 226}
-  m_MaxSize: {x: 4001, y: 4026}
+  m_MinSize: {x: 200, y: 200}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 24}
   m_Panes:
   - {fileID: 24}
@@ -369,8 +369,8 @@ MonoBehaviour:
     y: 0
     width: 1087.2001
     height: 884.8
-  m_MinSize: {x: 202, y: 226}
-  m_MaxSize: {x: 4002, y: 4026}
+  m_MinSize: {x: 200, y: 200}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 23}
   m_Panes:
   - {fileID: 23}
@@ -396,8 +396,8 @@ MonoBehaviour:
     y: 0
     width: 923.19995
     height: 884.8
-  m_MinSize: {x: 202, y: 226}
-  m_MaxSize: {x: 4002, y: 4026}
+  m_MinSize: {x: 200, y: 200}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 26}
   m_Panes:
   - {fileID: 26}
@@ -456,7 +456,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 100}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 2055
+  controlID: 184
   draggingID: 0
 --- !u!114 &19
 MonoBehaviour:
@@ -477,8 +477,8 @@ MonoBehaviour:
     y: 0
     width: 541.6001
     height: 1048.8
-  m_MinSize: {x: 276, y: 76}
-  m_MaxSize: {x: 4001, y: 4026}
+  m_MinSize: {x: 275, y: 50}
+  m_MaxSize: {x: 4000, y: 4000}
   m_ActualView: {fileID: 31}
   m_Panes:
   - {fileID: 31}
@@ -532,8 +532,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Test Runner\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
-    y: 26
+    x: 80
+    y: 598.4
     width: 574.4
     height: 715.6
   m_SerializedDataModeController:
@@ -548,7 +548,7 @@ MonoBehaviour:
     m_ContainerData: []
     m_OverlaysVisible: 1
   m_Spl:
-    ID: 6819
+    ID: 193
     splitterInitialOffset: 0
     currentActiveSplitter: -1
     realSizes:
@@ -774,7 +774,7 @@ MonoBehaviour:
     - id: 1008
       uniqueId: '[PerformanceTraining.Tests.dll][suite]'
       name: PerformanceTraining.Tests.dll
-      fullName: C:/Users/raury/Documents/PerformanceTest/MassacreDojo_Optimization/Library/ScriptAssemblies/PerformanceTraining.Tests.dll
+      fullName: C:/Users/raury/Documents/PerformanceTest/PerformanceTraining/Library/ScriptAssemblies/PerformanceTraining.Tests.dll
       resultStatus: 2
       duration: 0.2494222
       messages: 
@@ -986,10 +986,10 @@ MonoBehaviour:
     m_ResultText: "Test_ObjectPool_SpawnAttackEffect (0.036s)\n---\n  \u30C6\u30B9\u30C8\u7528\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u304C\u4E0D\u8DB3\u3057\u3066\u3044\u307E\u3059\r\n 
       Expected: True\r\n  But was:  False\r\n\n---\nat PerformanceTraining.Tests.Exercise1_MemoryTests+<Test_ObjectPool_SpawnAttackEffect>d__11.MoveNext
       () [0x0002e] in <color=#40a0ff><a href=\"C:\\Users\\raury\\Documents\\PerformanceTest\\MassacreDojo_Optimization\\Assets\\_Project\\Tests\\PlayMode\\Exercise1_MemoryTests.cs\"
-      line=\"195\r\">Assets\\_Project\\Tests\\PlayMode\\Exercise1_MemoryTests.cs:195\r</a></color>\nat
+      line=\"195\">..\\MassacreDojo_Optimization\\Assets\\_Project\\Tests\\PlayMode\\Exercise1_MemoryTests.cs:195</a></color>\nat
       UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in
       <color=#40a0ff><a href=\".\\Library\\PackageCache\\com.unity.test-framework@0baaad2f700c\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs\"
-      line=\"44\r\">Library\\PackageCache\\com.unity.test-framework@0baaad2f700c\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs:44\r</a></color>"
+      line=\"44\">Library\\PackageCache\\com.unity.test-framework@0baaad2f700c\\UnityEngine.TestRunner\\NUnitExtensions\\Attributes\\TestEnumerator.cs:44</a></color>"
     m_ResultStacktrace: 'at PerformanceTraining.Tests.Exercise1_MemoryTests+<Test_ObjectPool_SpawnAttackEffect>d__11.MoveNext
       () [0x0002e] in C:\Users\raury\Documents\PerformanceTest\MassacreDojo_Optimization\Assets\_Project\Tests\PlayMode\Exercise1_MemoryTests.cs:195
 
@@ -1117,8 +1117,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Exercise Manager\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
-    y: 26
+    x: 385.6
+    y: 280
     width: 551.2
     height: 750
   m_SerializedDataModeController:
@@ -1153,8 +1153,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Scene\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 506.6
-    y: 24
+    x: 512.8
+    y: 86.4
     width: 1085.2001
     height: 858.8
   m_SerializedDataModeController:
@@ -1761,7 +1761,7 @@ MonoBehaviour:
   m_Rotation:
     m_Target: {x: -0.6321817, y: 0.33923015, z: -0.3593631, w: -0.5967641}
     speed: 2
-    m_Value: {x: -0.63218176, y: 0.33923015, z: -0.3593631, w: -0.5967641}
+    m_Value: {x: -0.6321817, y: 0.33923015, z: -0.3593631, w: -0.5967641}
   m_Size:
     m_Target: 0.9549018
     speed: 2
@@ -1820,8 +1820,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Hierarchy\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
-    y: 24
+    x: 7.2000003
+    y: 86.4
     width: 504.6
     height: 858.8
   m_SerializedDataModeController:
@@ -1840,7 +1840,7 @@ MonoBehaviour:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs: 
       m_LastClickedID: 0
-      m_ExpandedIDs: c057feff605afeffb65cfeffec8afeff7e6effffa285ffff20c8ffffc0caffff80dfffff86dfffff8cdfffff02e0ffffcef0ffff30f2ffff36f2ffff3cf2ffffa6f2ffffb6f5ffff24f6ffff36fbffff
+      m_ExpandedIDs: 2efbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1922,8 +1922,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Game\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1593.8
-    y: 24
+    x: 1600
+    y: 86.4
     width: 921.19995
     height: 858.8
   m_SerializedDataModeController:
@@ -2076,8 +2076,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Project\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
-    y: 908.8
+    x: 7.2000003
+    y: 971.2
     width: 2515
     height: 655.60004
   m_SerializedDataModeController:
@@ -2112,16 +2112,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 16
   m_LastFolders:
-  - Assets/_Project/Tests/PlayMode/Tests
+  - Assets
   m_LastFoldersGridSize: 16
-  m_LastProjectPath: C:\Users\raury\Documents\PerformanceTest\MassacreDojo_Optimization
+  m_LastProjectPath: C:\Users\raury\Documents\PerformanceTest\PerformanceTraining
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: f8470000
-    m_LastClickedID: 18424
-    m_ExpandedIDs: 00000000e8580000ea580000ec580000ee580000f0580000
+    m_SelectedIDs: e8580000
+    m_LastClickedID: 22760
+    m_ExpandedIDs: 00000000e8580000ea580000ec580000ee580000f058000000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2450,8 +2450,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Inspector\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1
-    y: 24
+    x: 2523.2
+    y: 86.4
     width: 540.6001
     height: 1022.80005
   m_SerializedDataModeController:
@@ -2499,8 +2499,8 @@ MonoBehaviour:
     m_TextWithWhitespace: "Inspector\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1
-    y: 1072.8
+    x: 2523.2
+    y: 1135.2001
     width: 540.6001
     height: 491.59998
   m_SerializedDataModeController:

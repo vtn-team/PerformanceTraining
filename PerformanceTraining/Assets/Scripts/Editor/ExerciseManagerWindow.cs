@@ -56,12 +56,8 @@ namespace PerformanceTraining.Editor
             // CPU Steps
             CPU_SpatialPartition,
             CPU_ProcessingOrder,
-            CPU_LoadBalancing,
             // Tradeoff Steps
-            Tradeoff_NeighborCache,
-            Tradeoff_DecisionCache,
-            Tradeoff_TrigLUT,
-            Tradeoff_VisibilityMap
+            Tradeoff_GPUInstancing
         }
 
         private ExerciseType selectedExercise = ExerciseType.Memory;
@@ -162,23 +158,33 @@ namespace PerformanceTraining.Editor
                     TargetFolders = new string[] { "Scripts/Exercises/CPU/" }
                 }
             },
-            // 課題3: トレードオフ
+            // 課題3: トレードオフ（GPU Instancing）
             new ExerciseInfo
             {
-                Title = "課題3: トレードオフ（メモリ vs CPU）",
-                Description = "メモリを消費してCPU計算を削減する各種キャッシュを実装",
-                TargetMetric = "Cache Hit Rate / 処理速度",
-                TargetBefore = "毎回計算",
-                TargetAfter = "キャッシュ使用（2-100倍高速）",
-                SourceFile = "Exercises/Tradeoff/",
-                MeasurementType = "CPU",
-                TestMethodName = "TestTradeoff",
-                Steps = new StepInfo[]
+                Title = "課題3: トレードオフ（GPU Instancing）",
+                Description = "GPU Instancingで描画を最適化せよ\n\n" +
+                              "同一メッシュ・マテリアルのキャラクターを一括描画し、\n" +
+                              "Draw Callを削減してください。",
+                TargetMetric = "Draw Calls (Batches)",
+                TargetBefore = "200+ Draw Calls",
+                TargetAfter = "1 Draw Call",
+                SourceFile = "Exercises/Tradeoff/GPUInstancing_Exercise.cs",
+                MeasurementType = "GPU",
+                TestMethodName = "TestGPUInstancing",
+                Steps = new StepInfo[] { }, // 実装項目は非表示（ヒントで誘導）
+                Hints = new HintInfo
                 {
-                    new StepInfo { Type = StepType.Tradeoff_NeighborCache, Name = "3-A: 近傍キャッシュ", Description = "近傍リストをキャッシュ" },
-                    new StepInfo { Type = StepType.Tradeoff_DecisionCache, Name = "3-B: AI判断キャッシュ", Description = "AI判断結果をキャッシュ" },
-                    new StepInfo { Type = StepType.Tradeoff_TrigLUT, Name = "3-C: 三角関数LUT", Description = "Sin/Cosをルックアップテーブル化" },
-                    new StepInfo { Type = StepType.Tradeoff_VisibilityMap, Name = "3-D: 可視性マップ", Description = "Raycast結果を事前計算" }
+                    ProfilerGuide = "Game View → Stats で Batches 数を確認\n" +
+                                   "Window → Analysis → Frame Debugger で Draw Call を確認\n" +
+                                   "Iキーでインスタンシングの ON/OFF を切り替え可能",
+                    CheckPoint = "① CollectInstanceData(): 描画データの収集\n" +
+                                "   → transform.localToWorldMatrix で変換行列を取得\n" +
+                                "   → キャラクタータイプに応じた色を _colors 配列に設定\n\n" +
+                                "② RenderInstanced(): 一括描画の実行\n" +
+                                "   → MaterialPropertyBlock.SetVectorArray(\"_Color\", _colors)\n" +
+                                "   → Graphics.DrawMeshInstanced() で一括描画",
+                    FixCount = 2,
+                    TargetFolders = new string[] { "Scripts/Exercises/Tradeoff/" }
                 }
             }
         };
