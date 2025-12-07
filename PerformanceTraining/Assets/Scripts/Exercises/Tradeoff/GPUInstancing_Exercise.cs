@@ -141,7 +141,7 @@ namespace PerformanceTraining.Exercises.Tradeoff
                     return new Vector4(1f, 0.3f, 0.3f, 1f); // 赤
                 case CharacterType.Mage:
                     return new Vector4(0.3f, 0.3f, 1f, 1f); // 青
-                case CharacterType.Archer:
+                case CharacterType.Ranger:
                     return new Vector4(0.3f, 1f, 0.3f, 1f); // 緑
                 case CharacterType.Tank:
                     return new Vector4(1f, 1f, 0.3f, 1f); // 黄

@@ -63,6 +63,56 @@ namespace PerformanceTraining.Exercises.CPU
         }
 
         /// <summary>
+        /// 空間グリッドを更新する（Enemy用オーバーロード）
+        /// </summary>
+        public void UpdateSpatialGrid(List<PerformanceTraining.Enemy.Enemy> enemies)
+        {
+            // TODO: 実装してください
+            // EnemyAIManagerから呼び出される用
+        }
+
+        /// <summary>
+        /// このフレームで更新すべきかどうかを判定する（更新分散用）
+        /// </summary>
+        public bool ShouldUpdateThisFrame(int updateGroup, int frameCount)
+        {
+            // TODO: 実装してください
+            // 更新分散: グループごとに異なるフレームで更新
+            // 例: グループ0は0,4,8...フレーム、グループ1は1,5,9...フレーム
+            return true; // 非最適化版: 常にtrue
+        }
+
+        /// <summary>
+        /// 平方根を使わない距離計算（二乗距離を返す）
+        /// </summary>
+        public float CalculateDistanceSqr(Vector3 a, Vector3 b)
+        {
+            // TODO: 実装してください
+            // sqrMagnitudeを使用して平方根計算を回避
+            return (a - b).sqrMagnitude;
+        }
+
+        /// <summary>
+        /// 2点間の距離が指定値以内かどうかを判定する（平方根を使わない）
+        /// </summary>
+        public bool IsWithinDistance(Vector3 a, Vector3 b, float maxDistance)
+        {
+            // TODO: 実装してください
+            // sqrMagnitudeと距離の2乗を比較して平方根計算を回避
+            return (a - b).sqrMagnitude <= maxDistance * maxDistance;
+        }
+
+        /// <summary>
+        /// 指定位置周辺の敵を取得する（Enemy用）
+        /// </summary>
+        public List<PerformanceTraining.Enemy.Enemy> QueryNearbyEnemies(Vector3 position)
+        {
+            // TODO: 実装してください
+            // 空間分割を使った近傍検索
+            return new List<PerformanceTraining.Enemy.Enemy>();
+        }
+
+        /// <summary>
         /// 座標からセルインデックスを取得する
         /// </summary>
         public int GetCellIndex(Vector3 position)

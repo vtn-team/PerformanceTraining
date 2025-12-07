@@ -131,7 +131,7 @@ namespace PerformanceTraining.Solutions.Tradeoff
                     return new Vector4(1f, 0.3f, 0.3f, 1f);
                 case CharacterType.Mage:
                     return new Vector4(0.3f, 0.3f, 1f, 1f);
-                case CharacterType.Archer:
+                case CharacterType.Ranger:
                     return new Vector4(0.3f, 1f, 0.3f, 1f);
                 case CharacterType.Tank:
                     return new Vector4(1f, 1f, 0.3f, 1f);
