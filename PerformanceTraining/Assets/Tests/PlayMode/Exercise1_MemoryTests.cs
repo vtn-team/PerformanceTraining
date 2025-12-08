@@ -14,6 +14,7 @@ namespace PerformanceTraining.Tests
     /// Unity Test Runner + ProfilerRecorder を使用
     /// </summary>
     [TestFixture]
+    [Category("Exercise1_Memory")]
     public class Exercise1_MemoryTests
     {
         // テスト用の最小キャラクター数

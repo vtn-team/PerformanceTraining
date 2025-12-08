@@ -1,0 +1,12 @@
+{
+  "httpMethod": "GET",
+  "path": "/scores/test-device-12345",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": null,
+  "pathParameters": {
+    "udid": "test-device-12345"
+  },
+  "queryStringParameters": null
+}

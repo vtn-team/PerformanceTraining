@@ -123,23 +123,18 @@ namespace PerformanceTraining.Core
         }
 
         /// <summary>
-        /// 名前テキストを毎フレーム更新（ボトルネック）
+        /// 名前テキストを更新（名前のみ表示、HP%はバーで表示）
         /// </summary>
         private void UpdateNameText()
         {
             if (_nameText == null || _character == null) return;
 
-            // ボトルネック: string.Format による文字列生成（毎フレーム新しい文字列を生成）
-            string typeStr = _character.Type.ToString();
-            string stateStr = _character.State.ToString();
-            int hpPercent = (int)(_character.HealthPercent * 100);
-
-            // 複数回の文字列結合でGC Allocを増やす
-            string displayName = _character.CharacterName;
-            displayName = displayName + " [" + typeStr + "]";
-            displayName = string.Format("{0} ({1}%)", displayName, hpPercent);
-
-            _nameText.text = displayName;
+            // 名前のみ表示（HPはバーで表示されるため）
+            // 注: 変更がある場合のみ更新することでGC Allocを削減可能
+            if (_nameText.text != _character.CharacterName)
+            {
+                _nameText.text = _character.CharacterName;
+            }
         }
 
         private void SetVisible(bool visible)

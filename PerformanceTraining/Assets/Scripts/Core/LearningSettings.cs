@@ -3,12 +3,26 @@ using UnityEngine;
 namespace PerformanceTraining.Core
 {
     /// <summary>
+    /// 現在の課題モード
+    /// </summary>
+    public enum ExerciseMode
+    {
+        Memory,     // 課題1: メモリ最適化
+        CPU,        // 課題2: CPU最適化
+        Tradeoff    // 課題3: トレードオフ
+    }
+
+    /// <summary>
     /// 学習課題の進行状況を管理するScriptableObject
     /// 各最適化機能のON/OFFを切り替えて効果を確認できる
     /// </summary>
     [CreateAssetMenu(fileName = "LearningSettings", menuName = "PerformanceTraining/Learning Settings")]
     public class LearningSettings : ScriptableObject
     {
+        [Header("=== 現在の課題 ===")]
+        [Tooltip("現在取り組んでいる課題")]
+        public ExerciseMode currentExercise = ExerciseMode.Memory;
+
         [Header("=== 課題1: メモリ最適化 ===")]
         [Tooltip("Step 1: オブジェクトプールを使用する")]
         public bool useObjectPool = false;

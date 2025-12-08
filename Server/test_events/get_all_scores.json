@@ -1,0 +1,10 @@
+{
+  "httpMethod": "GET",
+  "path": "/scores",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": null,
+  "pathParameters": null,
+  "queryStringParameters": null
+}

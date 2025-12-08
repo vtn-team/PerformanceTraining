@@ -7,6 +7,65 @@ using System.Collections.Generic;
 namespace PerformanceTraining.Editor
 {
     /// <summary>
+    /// ユーザー設定を保存するクラス
+    /// </summary>
+    public static class ExerciseUserSettings
+    {
+        private const string USER_NAME_KEY = "PerformanceTraining_UserName";
+        private const string DEFAULT_SERVER_URL = "https://e7vhxtwu48.execute-api.ap-northeast-1.amazonaws.com/default";
+
+        public static string UserName
+        {
+            get => EditorPrefs.GetString(USER_NAME_KEY, "");
+            set => EditorPrefs.SetString(USER_NAME_KEY, value);
+        }
+
+        public static string ServerUrl => DEFAULT_SERVER_URL;
+
+        public static bool HasUserName => !string.IsNullOrEmpty(UserName);
+        public static bool HasServerUrl => true;
+    }
+
+    /// <summary>
+    /// サーバからのスコアデータ（フラット構造）
+    /// </summary>
+    [System.Serializable]
+    public class ScoreData
+    {
+        public string exerciseId;
+        public float score;
+        public int testsPassed;
+        public int totalTests;
+        public float executionTimeMs;
+        public long gcAllocBytes;
+        public string updatedAt;
+    }
+
+    [System.Serializable]
+    public class UserScoresResponse
+    {
+        public string udid;
+        public string userName;
+        public ScoreData[] scores;
+    }
+
+    [System.Serializable]
+    public class RankingEntry
+    {
+        public int rank;
+        public string userName;
+        public float score;
+        public string updatedAt;
+    }
+
+    [System.Serializable]
+    public class RankingResponse
+    {
+        public string exerciseId;
+        public RankingEntry[] ranking;
+    }
+
+    /// <summary>
     /// プロジェクト起動時にExercise Managerを自動で開く
     /// </summary>
     [InitializeOnLoad]
@@ -37,6 +96,13 @@ namespace PerformanceTraining.Editor
     /// </summary>
     public class ExerciseManagerWindow : EditorWindow
     {
+        // タブタイプ
+        private enum TabType
+        {
+            Settings,   // 設定
+            Exercises   // 課題
+        }
+
         // 課題タイプ（3つの大課題）
         private enum ExerciseType
         {
@@ -60,8 +126,20 @@ namespace PerformanceTraining.Editor
             Tradeoff_GPUInstancing
         }
 
+        private TabType currentTab = TabType.Exercises;
         private ExerciseType selectedExercise = ExerciseType.Memory;
         private Vector2 scrollPosition;
+
+        // 設定タブ用
+        private string userName = "";
+        private bool isInitialized = false;
+
+        // サーバスコア表示用
+        private UserScoresResponse cachedUserScores;
+        private RankingResponse cachedRanking;
+        private string selectedRankingExercise = "Memory";
+        private bool isFetchingScores = false;
+        private string fetchStatusMessage = "";
 
         // テスト結果保存用（Stepごと）
         private static Dictionary<StepType, bool> stepTestResults = new Dictionary<StepType, bool>();
@@ -239,6 +317,22 @@ namespace PerformanceTraining.Editor
             stylesInitialized = true;
         }
 
+        private void OnEnable()
+        {
+            // 設定から名前を読み込む
+            userName = ExerciseUserSettings.UserName;
+
+            // 初回起動時（名前未設定）は設定タブを表示
+            if (!isInitialized)
+            {
+                isInitialized = true;
+                if (!ExerciseUserSettings.HasUserName)
+                {
+                    currentTab = TabType.Settings;
+                }
+            }
+        }
+
         private void OnGUI()
         {
             InitStyles();
@@ -247,6 +341,300 @@ namespace PerformanceTraining.Editor
             EditorGUILayout.Space(15);
             GUILayout.Label("PerformanceTraining 最適化課題", headerStyle);
             EditorGUILayout.Space(10);
+
+            // タブ切り替え
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Toggle(currentTab == TabType.Exercises, "課題", "Button", GUILayout.Width(100), GUILayout.Height(30)))
+            {
+                currentTab = TabType.Exercises;
+            }
+            if (GUILayout.Toggle(currentTab == TabType.Settings, "設定", "Button", GUILayout.Width(100), GUILayout.Height(30)))
+            {
+                currentTab = TabType.Settings;
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(10);
+            DrawSeparator();
+
+            // タブの内容を描画
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
+            switch (currentTab)
+            {
+                case TabType.Settings:
+                    DrawSettingsTab();
+                    break;
+                case TabType.Exercises:
+                    DrawExercisesTab();
+                    break;
+            }
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawSettingsTab()
+        {
+            EditorGUILayout.Space(15);
+
+            // 名前未設定の場合は警告を表示
+            if (!ExerciseUserSettings.HasUserName)
+            {
+                EditorGUILayout.HelpBox(
+                    "まずはあなたの名前を入力してください。\n" +
+                    "この名前はテスト結果の記録に使用されます。",
+                    MessageType.Warning);
+                EditorGUILayout.Space(10);
+            }
+
+            // 名前入力セクション
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label("ユーザー設定", boldLabelStyle);
+            EditorGUILayout.Space(10);
+
+            // 名前入力
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("名前:", boldLabelStyle, GUILayout.Width(100));
+            string newName = EditorGUILayout.TextField(userName, GUILayout.Height(25));
+            if (newName != userName)
+            {
+                userName = newName;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(10);
+
+            // 保存ボタン
+            if (GUILayout.Button("設定を保存", buttonStyle, GUILayout.Height(35)))
+            {
+                if (string.IsNullOrEmpty(userName.Trim()))
+                {
+                    EditorUtility.DisplayDialog("エラー", "名前を入力してください。", "OK");
+                }
+                else
+                {
+                    ExerciseUserSettings.UserName = userName.Trim();
+                    EditorUtility.DisplayDialog("保存完了", $"設定を保存しました。", "OK");
+
+                    // 保存後に課題タブへ移動
+                    currentTab = TabType.Exercises;
+                }
+            }
+
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(15);
+
+            // 現在の設定を表示
+            if (ExerciseUserSettings.HasUserName)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                GUILayout.Label("現在の設定", boldLabelStyle);
+                EditorGUILayout.Space(5);
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label("登録名:", labelStyle, GUILayout.Width(100));
+                GUILayout.Label(ExerciseUserSettings.UserName, boldLabelStyle);
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.EndVertical();
+            }
+
+            EditorGUILayout.Space(15);
+
+            // サーバからスコア取得セクション
+            DrawServerScoreSection();
+        }
+
+        private void DrawServerScoreSection()
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label("サーバスコア", boldLabelStyle);
+            EditorGUILayout.Space(5);
+
+            // ステータスメッセージ
+            if (!string.IsNullOrEmpty(fetchStatusMessage))
+            {
+                EditorGUILayout.HelpBox(fetchStatusMessage, MessageType.Info);
+            }
+
+            // 自分のスコア取得
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("自分のスコアを取得", buttonStyle, GUILayout.Height(30)))
+            {
+                FetchUserScores();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // キャッシュされたスコアを表示
+            if (cachedUserScores != null && cachedUserScores.scores != null)
+            {
+                EditorGUILayout.Space(10);
+                GUILayout.Label($"{cachedUserScores.userName} のスコア:", boldLabelStyle);
+
+                foreach (var score in cachedUserScores.scores)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    GUILayout.Label($"  {score.exerciseId}:", labelStyle, GUILayout.Width(100));
+                    GUILayout.Label($"{score.score:F0} 点", boldLabelStyle, GUILayout.Width(80));
+                    GUILayout.Label($"({score.testsPassed}/{score.totalTests} テスト合格)", labelStyle);
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+
+            EditorGUILayout.Space(15);
+            DrawSeparator();
+            EditorGUILayout.Space(10);
+
+            // ランキング取得
+            GUILayout.Label("ランキング", boldLabelStyle);
+            EditorGUILayout.Space(5);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("課題:", labelStyle, GUILayout.Width(50));
+            string[] exerciseOptions = { "Memory", "CPU", "Tradeoff" };
+            int selectedIndex = System.Array.IndexOf(exerciseOptions, selectedRankingExercise);
+            if (selectedIndex < 0) selectedIndex = 0;
+            selectedIndex = EditorGUILayout.Popup(selectedIndex, exerciseOptions, GUILayout.Width(120));
+            selectedRankingExercise = exerciseOptions[selectedIndex];
+
+            if (GUILayout.Button("ランキング取得", buttonStyle, GUILayout.Height(25)))
+            {
+                FetchRanking(selectedRankingExercise);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // キャッシュされたランキングを表示
+            if (cachedRanking != null && cachedRanking.ranking != null && cachedRanking.exerciseId == selectedRankingExercise)
+            {
+                EditorGUILayout.Space(10);
+                GUILayout.Label($"{cachedRanking.exerciseId} ランキング:", boldLabelStyle);
+
+                foreach (var entry in cachedRanking.ranking)
+                {
+                    EditorGUILayout.BeginHorizontal();
+
+                    // 順位による色分け
+                    var rankStyle = new GUIStyle(boldLabelStyle);
+                    if (entry.rank == 1) rankStyle.normal.textColor = new Color(1f, 0.84f, 0f); // 金
+                    else if (entry.rank == 2) rankStyle.normal.textColor = new Color(0.75f, 0.75f, 0.75f); // 銀
+                    else if (entry.rank == 3) rankStyle.normal.textColor = new Color(0.8f, 0.5f, 0.2f); // 銅
+
+                    GUILayout.Label($"  {entry.rank}位", rankStyle, GUILayout.Width(50));
+                    GUILayout.Label(entry.userName, labelStyle, GUILayout.Width(120));
+                    GUILayout.Label($"{entry.score:F0} 点", boldLabelStyle);
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                if (cachedRanking.ranking.Length == 0)
+                {
+                    GUILayout.Label("  (まだ記録がありません)", labelStyle);
+                }
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private async void FetchUserScores()
+        {
+            if (isFetchingScores) return;
+
+            isFetchingScores = true;
+            fetchStatusMessage = "スコアを取得中...";
+            Repaint();
+
+            try
+            {
+                // UDIDでスコアを取得
+                string udid = UnityEngine.SystemInfo.deviceUniqueIdentifier;
+                string url = $"{ExerciseUserSettings.ServerUrl}/scores/{udid}";
+
+                using (var request = UnityEngine.Networking.UnityWebRequest.Get(url))
+                {
+                    var operation = request.SendWebRequest();
+
+                    while (!operation.isDone)
+                    {
+                        await System.Threading.Tasks.Task.Delay(100);
+                    }
+
+                    if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+                    {
+                        cachedUserScores = JsonUtility.FromJson<UserScoresResponse>(request.downloadHandler.text);
+                        fetchStatusMessage = "スコアを取得しました。";
+                    }
+                    else
+                    {
+                        fetchStatusMessage = $"エラー: {request.error}";
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                fetchStatusMessage = $"エラー: {e.Message}";
+            }
+            finally
+            {
+                isFetchingScores = false;
+                Repaint();
+            }
+        }
+
+        private async void FetchRanking(string exerciseId)
+        {
+            if (isFetchingScores) return;
+
+            isFetchingScores = true;
+            fetchStatusMessage = "ランキングを取得中...";
+            Repaint();
+
+            try
+            {
+                string url = $"{ExerciseUserSettings.ServerUrl}/ranking/{exerciseId}";
+
+                using (var request = UnityEngine.Networking.UnityWebRequest.Get(url))
+                {
+                    var operation = request.SendWebRequest();
+
+                    while (!operation.isDone)
+                    {
+                        await System.Threading.Tasks.Task.Delay(100);
+                    }
+
+                    if (request.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+                    {
+                        cachedRanking = JsonUtility.FromJson<RankingResponse>(request.downloadHandler.text);
+                        fetchStatusMessage = "ランキングを取得しました。";
+                    }
+                    else
+                    {
+                        fetchStatusMessage = $"エラー: {request.error}";
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                fetchStatusMessage = $"エラー: {e.Message}";
+            }
+            finally
+            {
+                isFetchingScores = false;
+                Repaint();
+            }
+        }
+
+        private void DrawExercisesTab()
+        {
+            // 名前未設定の場合は警告
+            if (!ExerciseUserSettings.HasUserName)
+            {
+                EditorGUILayout.HelpBox(
+                    "設定タブで名前を入力してください。",
+                    MessageType.Warning);
+                EditorGUILayout.Space(5);
+            }
 
             EditorGUILayout.HelpBox(
                 "各課題を選択し、目標値を確認してから実装に取り組んでください。\n" +
@@ -265,9 +653,7 @@ namespace PerformanceTraining.Editor
             DrawSeparator();
 
             // 選択した課題の詳細
-            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
             DrawExerciseDetail(Exercises[(int)selectedExercise]);
-            EditorGUILayout.EndScrollView();
         }
 
         private void DrawExerciseDetail(ExerciseInfo info)
@@ -576,6 +962,21 @@ namespace PerformanceTraining.Editor
             if (settings != null)
             {
                 settings.showPerformanceMonitor = true;
+
+                // 課題モードを設定（カメラズームに影響）
+                switch (selectedExercise)
+                {
+                    case ExerciseType.Memory:
+                        settings.currentExercise = Core.ExerciseMode.Memory;
+                        break;
+                    case ExerciseType.CPU:
+                        settings.currentExercise = Core.ExerciseMode.CPU;
+                        break;
+                    case ExerciseType.Tradeoff:
+                        settings.currentExercise = Core.ExerciseMode.Tradeoff;
+                        break;
+                }
+
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
@@ -590,16 +991,38 @@ namespace PerformanceTraining.Editor
             // Unity Test Runner ウィンドウを開く
             EditorApplication.ExecuteMenuItem("Window/General/Test Runner");
 
+            // 選択した課題に対応するカテゴリ名を取得
+            string categoryName = GetTestCategoryForExercise(selectedExercise);
+
             // TestRunnerApiを使用してPlayModeテストを自動実行
             var testRunnerApi = ScriptableObject.CreateInstance<UnityEditor.TestTools.TestRunner.Api.TestRunnerApi>();
             var filter = new UnityEditor.TestTools.TestRunner.Api.Filter
             {
                 testMode = UnityEditor.TestTools.TestRunner.Api.TestMode.PlayMode,
-                targetPlatform = null
+                targetPlatform = null,
+                categoryNames = new[] { categoryName }  // カテゴリでフィルタリング
             };
 
-            Debug.Log("テストを実行します...");
+            Debug.Log($"テストを実行します... (カテゴリ: {categoryName})");
             testRunnerApi.Execute(new UnityEditor.TestTools.TestRunner.Api.ExecutionSettings(filter));
+        }
+
+        /// <summary>
+        /// 課題タイプに対応するテストカテゴリ名を取得
+        /// </summary>
+        private string GetTestCategoryForExercise(ExerciseType exercise)
+        {
+            switch (exercise)
+            {
+                case ExerciseType.Memory:
+                    return "Exercise1_Memory";
+                case ExerciseType.CPU:
+                    return "Exercise2_CPU";
+                case ExerciseType.Tradeoff:
+                    return "Exercise3_Tradeoff";
+                default:
+                    return "";
+            }
         }
 
         private void OpenProfiler(string measurementType)

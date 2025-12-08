@@ -27,7 +27,9 @@ namespace PerformanceTraining.Core
 
         [Header("Character Focus")]
         [SerializeField] private float _focusZoomHeight = 50f;
-        [SerializeField] private Character _currentFocusCharacter;
+
+        [Header("Settings")]
+        [SerializeField] private LearningSettings _learningSettings;
 
         private Camera _camera;
         private Vector3 _targetPosition;
@@ -41,7 +43,49 @@ namespace PerformanceTraining.Core
             {
                 _camera = Camera.main;
             }
-            _targetPosition = transform.position;
+
+            // LearningSettingsを取得
+            if (_learningSettings == null)
+            {
+                _learningSettings = Resources.Load<LearningSettings>("LearningSettings");
+            }
+
+            // 課題モードに応じた初期ズーム設定
+            SetInitialZoom();
+        }
+
+        /// <summary>
+        /// 課題モードに応じた初期ズームを設定
+        /// </summary>
+        private void SetInitialZoom()
+        {
+            float initialHeight;
+
+            if (_learningSettings != null)
+            {
+                switch (_learningSettings.currentExercise)
+                {
+                    case ExerciseMode.Memory:
+                        // 課題1: 最大ズーム（近い）
+                        initialHeight = _minHeight;
+                        break;
+                    case ExerciseMode.CPU:
+                    case ExerciseMode.Tradeoff:
+                    default:
+                        // 課題2, 3: 最小ズーム（遠い）
+                        initialHeight = _maxHeight;
+                        break;
+                }
+            }
+            else
+            {
+                initialHeight = _maxHeight;
+            }
+
+            // 原点から開始
+            float backOffset = initialHeight * 0.5f;
+            _targetPosition = new Vector3(0f, initialHeight, -backOffset);
+            transform.position = _targetPosition;
         }
 
         private void Start()
@@ -50,31 +94,6 @@ namespace PerformanceTraining.Core
             if (GameManager.Instance != null)
             {
                 _characterManager = GameManager.Instance.CharacterManager;
-            }
-
-            // シーン起動後にキャラクターにフォーカス
-            StartCoroutine(FocusOnCharacterDelayed());
-        }
-
-        /// <summary>
-        /// 少し待ってからキャラクターにフォーカス（スポーン完了を待つ）
-        /// </summary>
-        private IEnumerator FocusOnCharacterDelayed()
-        {
-            // キャラクターがスポーンされるまで待つ
-            yield return new WaitForSeconds(0.5f);
-
-            // CharacterManagerが取得できていない場合は再取得
-            if (_characterManager == null && GameManager.Instance != null)
-            {
-                _characterManager = GameManager.Instance.CharacterManager;
-            }
-
-            // 最初のキャラクターにフォーカス
-            if (_characterManager != null && _characterManager.AliveCharacters.Count > 0)
-            {
-                _currentCharacterIndex = 0;
-                FocusOnCharacter(_characterManager.AliveCharacters[0]);
             }
         }
 
@@ -150,17 +169,17 @@ namespace PerformanceTraining.Core
         }
 
         /// <summary>
-        /// 指定キャラクターにフォーカス
+        /// 指定キャラクターにフォーカス（追従なし、位置移動のみ）
         /// </summary>
         public void FocusOnCharacter(Character character)
         {
             if (character == null || !character.IsAlive) return;
 
-            _currentFocusCharacter = character;
             Vector3 charPos = character.transform.position;
 
             // カメラ位置を計算（キャラクターの少し後ろ上方）
-            float height = _focusZoomHeight;
+            // 現在の高さを維持
+            float height = _targetPosition.y;
             float backOffset = height * 0.5f;
 
             _targetPosition = new Vector3(charPos.x, height, charPos.z - backOffset);
