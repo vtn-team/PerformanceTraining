@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfceab9843e48224e924e7d866d2a447, type: 3}
   m_Name: LearningSettings
   m_EditorClassIdentifier: 
+  currentExercise: 0
   useObjectPool: 0
   useStringBuilder: 0
   useDelegateCache: 0
