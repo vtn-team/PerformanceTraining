@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 using UnityEditor;
+using TMPro;
 using System.Collections.Generic;
 using System.IO;
 using PerformanceTraining.Core;
@@ -168,6 +170,8 @@ namespace PerformanceTraining.Editor
             // polyperfectのスクリプトを無効化/削除（競合を防ぐ）
             RemovePolyperfectScripts(modelInstance);
 
+            // CharacterUIは共通プレハブを使用するため、ここでは追加しない
+
             // プレハブとして保存
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
 
@@ -235,6 +239,99 @@ namespace PerformanceTraining.Editor
             {
                 Object.DestroyImmediate(col);
             }
+        }
+
+        private const string CHARACTER_UI_PREFAB_PATH = "Assets/Prefabs/UI/CharacterUI.prefab";
+
+        [MenuItem("Tools/Performance Training/Create CharacterUI Prefab")]
+        public static void CreateCharacterUIPrefab()
+        {
+            // 出力フォルダを作成
+            string uiFolder = "Assets/Prefabs/UI";
+            if (!AssetDatabase.IsValidFolder(uiFolder))
+            {
+                AssetDatabase.CreateFolder("Assets/Prefabs", "UI");
+            }
+
+            // 既存のプレハブがあれば削除
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(CHARACTER_UI_PREFAB_PATH) != null)
+            {
+                AssetDatabase.DeleteAsset(CHARACTER_UI_PREFAB_PATH);
+            }
+
+            // CharacterUI用のルートオブジェクトを作成
+            var uiRoot = new GameObject("CharacterUI");
+            uiRoot.transform.localPosition = Vector3.zero;
+            uiRoot.transform.localRotation = Quaternion.identity;
+            uiRoot.transform.localScale = Vector3.one;
+
+            // RectTransformを追加
+            var rectTransform = uiRoot.AddComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(100f, 30f);
+            rectTransform.localScale = Vector3.one;
+
+            // CanvasGroup
+            var canvasGroup = uiRoot.AddComponent<CanvasGroup>();
+
+            // HPBar Background
+            var hpBgObj = new GameObject("HPBarBackground");
+            hpBgObj.transform.SetParent(uiRoot.transform, false);
+            hpBgObj.transform.localScale = Vector3.one;
+            var hpBgRect = hpBgObj.AddComponent<RectTransform>();
+            hpBgRect.anchoredPosition = new Vector2(0f, 0f);
+            hpBgRect.sizeDelta = new Vector2(100f, 10f);
+            hpBgRect.localScale = Vector3.one;
+            var hpBgImage = hpBgObj.AddComponent<Image>();
+            hpBgImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+
+            // HPBar Fill
+            var hpFillObj = new GameObject("HPBarFill");
+            hpFillObj.transform.SetParent(hpBgObj.transform, false);
+            hpFillObj.transform.localScale = Vector3.one;
+            var hpFillRect = hpFillObj.AddComponent<RectTransform>();
+            hpFillRect.anchorMin = Vector2.zero;
+            hpFillRect.anchorMax = Vector2.one;
+            hpFillRect.offsetMin = Vector2.zero;
+            hpFillRect.offsetMax = Vector2.zero;
+            hpFillRect.localScale = Vector3.one;
+            var hpFillImage = hpFillObj.AddComponent<Image>();
+            hpFillImage.color = Color.green;
+            hpFillImage.type = Image.Type.Filled;
+            hpFillImage.fillMethod = Image.FillMethod.Horizontal;
+            hpFillImage.fillOrigin = 0;
+
+            // Name Text
+            var nameTextObj = new GameObject("NameText");
+            nameTextObj.transform.SetParent(uiRoot.transform, false);
+            nameTextObj.transform.localScale = Vector3.one;
+            var nameTextRect = nameTextObj.AddComponent<RectTransform>();
+            nameTextRect.anchoredPosition = new Vector2(0f, 12f);
+            nameTextRect.sizeDelta = new Vector2(100f, 14f);
+            nameTextRect.localScale = Vector3.one;
+            var nameText = nameTextObj.AddComponent<TextMeshProUGUI>();
+            nameText.text = "Name";
+            nameText.fontSize = 12;
+            nameText.alignment = TextAlignmentOptions.Center;
+            nameText.color = Color.white;
+
+            // CharacterUI コンポーネントを追加
+            var characterUI = uiRoot.AddComponent<CharacterUI>();
+
+            // SerializedObjectを使用してprivateフィールドに値を設定
+            var so = new SerializedObject(characterUI);
+            so.FindProperty("_canvasGroup").objectReferenceValue = canvasGroup;
+            so.FindProperty("_nameText").objectReferenceValue = nameText;
+            so.FindProperty("_hpBarFill").objectReferenceValue = hpFillImage;
+            so.FindProperty("_hpBarBackground").objectReferenceValue = hpBgImage;
+            so.ApplyModifiedProperties();
+
+            // プレハブとして保存
+            var prefab = PrefabUtility.SaveAsPrefabAsset(uiRoot, CHARACTER_UI_PREFAB_PATH);
+
+            // 一時オブジェクトを破棄
+            Object.DestroyImmediate(uiRoot);
+
+            Debug.Log($"CharacterUI prefab created at: {CHARACTER_UI_PREFAB_PATH}");
         }
 
         [MenuItem("Tools/Performance Training/List Available Prefabs")]

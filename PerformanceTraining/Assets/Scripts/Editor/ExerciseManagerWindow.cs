@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEngine.Networking;
 using System.IO;
 using System.Collections.Generic;
 
@@ -75,13 +76,11 @@ namespace PerformanceTraining.Editor
 
         static ExerciseManagerAutoOpen()
         {
-            // エディタ起動後に遅延実行
             EditorApplication.delayCall += OpenWindowOnce;
         }
 
         private static void OpenWindowOnce()
         {
-            // このセッションで既に開いていたらスキップ
             if (SessionState.GetBool(AUTO_OPEN_KEY, false))
                 return;
 
@@ -93,10 +92,11 @@ namespace PerformanceTraining.Editor
     /// <summary>
     /// 課題管理ウィンドウ
     /// 各課題の目標・計測・ソースコードへの導線を提供
+    /// 初回セットアップも同一ウィンドウ内で行う
     /// </summary>
     public class ExerciseManagerWindow : EditorWindow
     {
-        // タブタイプ
+        // タブタイプ（初回セットアップ完了後のみ使用）
         private enum TabType
         {
             Settings,   // 設定
@@ -132,7 +132,17 @@ namespace PerformanceTraining.Editor
 
         // 設定タブ用
         private string userName = "";
-        private bool isInitialized = false;
+
+        // 初回セットアップ用
+        private const string ASSET_DOWNLOAD_URL = "https://www.vtn-game.com/dl/asset/assets.unitypackage";
+        private const string ASSET_CHECK_PATH = "Assets/polyperfect";
+        private const string TEMP_PACKAGE_PATH = "Temp/assets.unitypackage";
+        private string nameValidationError = "";
+        private bool isDownloadingAsset = false;
+        private bool isImportingAsset = false;
+        private float downloadProgress = 0f;
+        private string assetStatusMessage = "";
+        private UnityWebRequest currentDownloadRequest;
 
         // サーバスコア表示用
         private UserScoresResponse cachedUserScores;
@@ -321,21 +331,18 @@ namespace PerformanceTraining.Editor
         {
             // 設定から名前を読み込む
             userName = ExerciseUserSettings.UserName;
-
-            // 初回起動時（名前未設定）は設定タブを表示
-            if (!isInitialized)
-            {
-                isInitialized = true;
-                if (!ExerciseUserSettings.HasUserName)
-                {
-                    currentTab = TabType.Settings;
-                }
-            }
         }
 
         private void OnGUI()
         {
             InitStyles();
+
+            // 初回セットアップが必要な場合は専用画面を表示
+            if (NeedsInitialSetup())
+            {
+                DrawInitialSetupScreen();
+                return;
+            }
 
             // ヘッダー
             EditorGUILayout.Space(15);
@@ -345,6 +352,13 @@ namespace PerformanceTraining.Editor
             // タブ切り替え
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
+
+            // 操作説明ボタン
+            if (GUILayout.Button("操作説明", "Button", GUILayout.Width(80), GUILayout.Height(30)))
+            {
+                ShowControlsHelp();
+            }
+
             if (GUILayout.Toggle(currentTab == TabType.Exercises, "課題", "Button", GUILayout.Width(100), GUILayout.Height(30)))
             {
                 currentTab = TabType.Exercises;
@@ -375,19 +389,324 @@ namespace PerformanceTraining.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        /// <summary>
+        /// 初回セットアップが必要かどうか
+        /// </summary>
+        private bool NeedsInitialSetup()
+        {
+            // ダウンロード/インポート中は初回セットアップ画面を表示し続ける
+            if (isDownloadingAsset || isImportingAsset)
+                return true;
+
+            return !ExerciseUserSettings.HasUserName || !IsAssetImported();
+        }
+
+        private bool IsAssetImported()
+        {
+            return AssetDatabase.IsValidFolder(ASSET_CHECK_PATH);
+        }
+
+        /// <summary>
+        /// 初回セットアップ画面を描画
+        /// </summary>
+        private void DrawInitialSetupScreen()
+        {
+            EditorGUILayout.Space(20);
+            GUILayout.Label("PerformanceTraining", headerStyle);
+            GUILayout.Label("初回セットアップ", headerStyle);
+            EditorGUILayout.Space(20);
+
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+
+            // ダウンロード・インポート中
+            if (isDownloadingAsset || isImportingAsset)
+            {
+                DrawAssetProgressSection();
+                EditorGUILayout.EndScrollView();
+                return;
+            }
+
+            // Step 1: 名前入力
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label("Step 1: 名前を入力してください", titleStyle);
+            EditorGUILayout.Space(5);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("名前:", boldLabelStyle, GUILayout.Width(50));
+            string newName = EditorGUILayout.TextField(userName, GUILayout.Height(25));
+            if (newName != userName)
+            {
+                userName = newName;
+                nameValidationError = "";
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // バリデーションエラー表示
+            if (!string.IsNullOrEmpty(nameValidationError))
+            {
+                EditorGUILayout.Space(5);
+                var errorStyle = new GUIStyle(EditorStyles.label)
+                {
+                    normal = { textColor = new Color(0.9f, 0.3f, 0.3f) },
+                    fontSize = Mathf.RoundToInt(12 * 1.25f)
+                };
+                GUILayout.Label(nameValidationError, errorStyle);
+            }
+
+            EditorGUILayout.Space(5);
+            GUILayout.Label("※ この名前はテスト結果の記録に使用されます", labelStyle);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(15);
+
+            // Step 2: アセット状態
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            GUILayout.Label("Step 2: アセットのインポート", titleStyle);
+            EditorGUILayout.Space(5);
+
+            bool isImported = IsAssetImported();
+            if (isImported)
+            {
+                EditorGUILayout.HelpBox("✓ アセットはインポート済みです", MessageType.Info);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(
+                    "アセットがインポートされていません。\n" +
+                    "「セットアップ開始」ボタンを押すと自動でダウンロード・インポートされます。",
+                    MessageType.Warning);
+            }
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(20);
+
+            // セットアップボタン
+            string buttonText = isImported ? "セットアップ完了" : "セットアップ開始";
+            GUI.backgroundColor = new Color(0.3f, 0.7f, 0.3f);
+            if (GUILayout.Button(buttonText, buttonStyle, GUILayout.Height(40)))
+            {
+                OnInitialSetupButtonClicked();
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void OnInitialSetupButtonClicked()
+        {
+            // バリデーション
+            if (!ValidateUserName())
+                return;
+
+            // 名前を保存
+            ExerciseUserSettings.UserName = userName.Trim();
+
+            // アセットチェック
+            if (!IsAssetImported())
+            {
+                StartAssetDownload();
+            }
+            else
+            {
+                // セットアップ完了 → シームレスに課題タブへ
+                currentTab = TabType.Exercises;
+                Repaint();
+            }
+        }
+
+        private bool ValidateUserName()
+        {
+            if (string.IsNullOrEmpty(userName))
+            {
+                nameValidationError = "※ 名前を入力してください";
+                return false;
+            }
+
+            string trimmed = userName.Trim();
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                nameValidationError = "※ 名前を入力してください（空白のみは不可）";
+                return false;
+            }
+
+            if (trimmed.Length < 2)
+            {
+                nameValidationError = "※ 名前は2文字以上で入力してください";
+                return false;
+            }
+
+            if (trimmed.Length > 20)
+            {
+                nameValidationError = "※ 名前は20文字以内で入力してください";
+                return false;
+            }
+
+            nameValidationError = "";
+            return true;
+        }
+
+        // ================================================================
+        // アセットダウンロード・インポート
+        // ================================================================
+
+        private void StartAssetDownload()
+        {
+            isDownloadingAsset = true;
+            downloadProgress = 0f;
+            assetStatusMessage = "ダウンロードを開始しています...";
+
+            string tempDir = Path.GetDirectoryName(TEMP_PACKAGE_PATH);
+            if (!Directory.Exists(tempDir))
+            {
+                Directory.CreateDirectory(tempDir);
+            }
+
+            currentDownloadRequest = new UnityWebRequest(ASSET_DOWNLOAD_URL, UnityWebRequest.kHttpVerbGET);
+            currentDownloadRequest.downloadHandler = new DownloadHandlerFile(TEMP_PACKAGE_PATH);
+            currentDownloadRequest.SendWebRequest();
+
+            EditorApplication.update += UpdateDownloadProgress;
+        }
+
+        private void UpdateDownloadProgress()
+        {
+            if (currentDownloadRequest == null)
+            {
+                EditorApplication.update -= UpdateDownloadProgress;
+                return;
+            }
+
+            downloadProgress = currentDownloadRequest.downloadProgress;
+
+            if (currentDownloadRequest.isDone)
+            {
+                EditorApplication.update -= UpdateDownloadProgress;
+
+                if (currentDownloadRequest.result == UnityWebRequest.Result.Success)
+                {
+                    assetStatusMessage = "ダウンロード完了。インポートを開始します...";
+                    isDownloadingAsset = false;
+                    currentDownloadRequest.Dispose();
+                    currentDownloadRequest = null;
+                    StartAssetImport();
+                }
+                else
+                {
+                    string error = currentDownloadRequest.error;
+                    assetStatusMessage = $"ダウンロードエラー: {error}";
+                    isDownloadingAsset = false;
+                    currentDownloadRequest.Dispose();
+                    currentDownloadRequest = null;
+                    EditorUtility.DisplayDialog("エラー", $"アセットのダウンロードに失敗しました。\n{error}", "OK");
+                }
+                Repaint();
+            }
+            else
+            {
+                float mb = currentDownloadRequest.downloadedBytes / (1024f * 1024f);
+                assetStatusMessage = $"ダウンロード中... {mb:F1} MB ({downloadProgress * 100:F0}%)";
+                Repaint();
+            }
+        }
+
+        private void StartAssetImport()
+        {
+            if (!File.Exists(TEMP_PACKAGE_PATH))
+            {
+                assetStatusMessage = "エラー: ダウンロードファイルが見つかりません";
+                EditorUtility.DisplayDialog("エラー", "ダウンロードしたファイルが見つかりません。", "OK");
+                return;
+            }
+
+            isImportingAsset = true;
+            assetStatusMessage = "アセットをインポート中...（完了まで少々お待ちください）";
+            Repaint();
+
+            EditorApplication.delayCall += () =>
+            {
+                try
+                {
+                    AssetDatabase.ImportPackage(TEMP_PACKAGE_PATH, false);
+                    EditorApplication.delayCall += OnAssetImportComplete;
+                }
+                catch (System.Exception e)
+                {
+                    assetStatusMessage = $"インポートエラー: {e.Message}";
+                    isImportingAsset = false;
+                    EditorUtility.DisplayDialog("エラー", $"アセットのインポートに失敗しました。\n{e.Message}", "OK");
+                    Repaint();
+                }
+            };
+        }
+
+        private void OnAssetImportComplete()
+        {
+            isImportingAsset = false;
+
+            if (File.Exists(TEMP_PACKAGE_PATH))
+            {
+                try { File.Delete(TEMP_PACKAGE_PATH); } catch { }
+            }
+
+            if (IsAssetImported())
+            {
+                // セットアップ完了 → シームレスに課題タブへ
+                currentTab = TabType.Exercises;
+            }
+            else
+            {
+                // もう少し待って再確認
+                EditorApplication.delayCall += () =>
+                {
+                    if (IsAssetImported())
+                    {
+                        currentTab = TabType.Exercises;
+                    }
+                    Repaint();
+                };
+            }
+            Repaint();
+        }
+
+        private void DrawAssetProgressSection()
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+            GUILayout.Label("アセットセットアップ中...", titleStyle);
+            EditorGUILayout.Space(15);
+
+            GUILayout.Label(assetStatusMessage, labelStyle);
+            EditorGUILayout.Space(15);
+
+            if (isDownloadingAsset)
+            {
+                EditorGUI.ProgressBar(
+                    EditorGUILayout.GetControlRect(false, 30),
+                    downloadProgress,
+                    $"ダウンロード中... {downloadProgress * 100:F0}%"
+                );
+            }
+            else if (isImportingAsset)
+            {
+                EditorGUI.ProgressBar(
+                    EditorGUILayout.GetControlRect(false, 30),
+                    1f,
+                    "インポート中..."
+                );
+            }
+
+            EditorGUILayout.Space(15);
+            EditorGUILayout.HelpBox(
+                "アセットのダウンロードとインポートには数分かかる場合があります。\n" +
+                "完了するまでお待ちください。",
+                MessageType.Info);
+
+            EditorGUILayout.EndVertical();
+        }
+
         private void DrawSettingsTab()
         {
             EditorGUILayout.Space(15);
-
-            // 名前未設定の場合は警告を表示
-            if (!ExerciseUserSettings.HasUserName)
-            {
-                EditorGUILayout.HelpBox(
-                    "まずはあなたの名前を入力してください。\n" +
-                    "この名前はテスト結果の記録に使用されます。",
-                    MessageType.Warning);
-                EditorGUILayout.Space(10);
-            }
 
             // 名前入力セクション
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -416,10 +735,7 @@ namespace PerformanceTraining.Editor
                 else
                 {
                     ExerciseUserSettings.UserName = userName.Trim();
-                    EditorUtility.DisplayDialog("保存完了", $"設定を保存しました。", "OK");
-
-                    // 保存後に課題タブへ移動
-                    currentTab = TabType.Exercises;
+                    EditorUtility.DisplayDialog("保存完了", "設定を保存しました。", "OK");
                 }
             }
 
@@ -446,6 +762,56 @@ namespace PerformanceTraining.Editor
 
             // サーバからスコア取得セクション
             DrawServerScoreSection();
+
+            // ユーザー情報削除セクション（下部に配置）
+            DrawDeleteUserSection();
+        }
+
+        private void DrawDeleteUserSection()
+        {
+            EditorGUILayout.Space(30);
+            DrawSeparator();
+            EditorGUILayout.Space(10);
+
+            // 赤い警告スタイル
+            var dangerLabelStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                normal = { textColor = new Color(0.9f, 0.3f, 0.3f) },
+                fontSize = Mathf.RoundToInt(12 * 1.25f)
+            };
+
+            var dangerButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                normal = { textColor = new Color(0.9f, 0.3f, 0.3f) },
+                fontSize = Mathf.RoundToInt(12 * 1.25f)
+            };
+
+            GUILayout.Label("デバッグ用", dangerLabelStyle);
+            EditorGUILayout.Space(5);
+
+            if (GUILayout.Button("ユーザー情報を削除", dangerButtonStyle, GUILayout.Height(30)))
+            {
+                if (EditorUtility.DisplayDialog(
+                    "確認",
+                    "ユーザー情報を削除しますか？\n\n" +
+                    "・登録名\n" +
+                    "・キャッシュされたスコア\n\n" +
+                    "この操作は取り消せません。",
+                    "削除する",
+                    "キャンセル"))
+                {
+                    // ユーザー情報を削除
+                    ExerciseUserSettings.UserName = "";
+                    userName = "";
+                    cachedUserScores = null;
+                    cachedRanking = null;
+
+                    EditorUtility.DisplayDialog("完了", "ユーザー情報を削除しました。", "OK");
+                    Repaint();
+                }
+            }
+
+            EditorGUILayout.Space(10);
         }
 
         private void DrawServerScoreSection()
@@ -645,15 +1011,13 @@ namespace PerformanceTraining.Editor
 
             // 課題選択
             EditorGUILayout.BeginHorizontal();
-
-            // 操作説明ボタン
-            if (GUILayout.Button("?", buttonStyle, GUILayout.Width(30), GUILayout.Height(25)))
-            {
-                ShowControlsHelp();
-            }
-
             GUILayout.Label("課題を選択:", boldLabelStyle, GUILayout.Width(100));
-            selectedExercise = (ExerciseType)EditorGUILayout.EnumPopup(selectedExercise, GUILayout.Height(25));
+            var popupStyle = new GUIStyle(EditorStyles.popup)
+            {
+                fontSize = Mathf.RoundToInt(14 * 1.25f),
+                fixedHeight = 35
+            };
+            selectedExercise = (ExerciseType)EditorGUILayout.EnumPopup(selectedExercise, popupStyle, GUILayout.Height(35));
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space(10);
@@ -826,6 +1190,14 @@ namespace PerformanceTraining.Editor
             if (GUILayout.Button($"Profiler を開く（{info.MeasurementType}）", buttonStyle, GUILayout.Height(30)))
             {
                 OpenProfiler(info.MeasurementType);
+            }
+
+            EditorGUILayout.Space(5);
+
+            // ソースコードを開く
+            if (GUILayout.Button("ソースコードを開く", buttonStyle, GUILayout.Height(30)))
+            {
+                OpenProjectSolution();
             }
 
             EditorGUILayout.EndVertical();
@@ -1024,6 +1396,27 @@ namespace PerformanceTraining.Editor
         {
             EditorApplication.ExecuteMenuItem("Window/Analysis/Profiler");
             Debug.Log($"Profilerを開きました。{measurementType}関連の項目を確認してください。");
+        }
+
+        private void OpenProjectSolution()
+        {
+            // プロジェクトルートにある.slnファイルを探す
+            string projectPath = Path.GetDirectoryName(Application.dataPath);
+            string[] slnFiles = Directory.GetFiles(projectPath, "*.sln");
+
+            if (slnFiles.Length > 0)
+            {
+                // 最初に見つかった.slnファイルを開く
+                string slnPath = slnFiles[0];
+                System.Diagnostics.Process.Start(slnPath);
+                Debug.Log($"ソリューションファイルを開きました: {slnPath}");
+            }
+            else
+            {
+                // .slnファイルが見つからない場合はUnityの機能で生成して開く
+                EditorApplication.ExecuteMenuItem("Assets/Open C# Project");
+                Debug.Log("C#プロジェクトを開きました。");
+            }
         }
 
         private void DrawSeparator()

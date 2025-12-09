@@ -333,14 +333,11 @@ namespace PerformanceTraining.Core
                 }
             }
 
-            // TODO: パフォーマンス課題 - 毎フレーム文字列結合によるGC Alloc
-            // 最適化: StringBuilderを使用して再利用する
             UpdateDebugStatus();
         }
 
         /// <summary>
-        /// デバッグ用ステータス文字列を更新（毎フレーム）
-        /// ボトルネック: 文字列結合による GC Alloc
+        /// デバッグ用ステータス文字列を更新
         /// </summary>
         private void UpdateDebugStatus()
         {

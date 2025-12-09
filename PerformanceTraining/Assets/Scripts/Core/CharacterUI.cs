@@ -6,39 +6,36 @@ namespace PerformanceTraining.Core
 {
     /// <summary>
     /// キャラクターの頭上に表示するUI（HP/名前）
-    /// カメラとの距離に応じて表示/非表示を切り替え
-    /// uGUI Canvas + TextMeshPro使用
+    /// Screen Space Canvasを使用し、ワールド座標をスクリーン座標に変換して表示
     /// </summary>
     public class CharacterUI : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private Character _character;
-        [SerializeField] private Canvas _canvas;
         [SerializeField] private CanvasGroup _canvasGroup;
         [SerializeField] private TextMeshProUGUI _nameText;
         [SerializeField] private Image _hpBarFill;
         [SerializeField] private Image _hpBarBackground;
 
         [Header("Settings")]
-        [SerializeField] private float _maxVisibleDistance = 30f;
-        [SerializeField] private float _fadeStartDistance = 20f;
-        [SerializeField] private Vector3 _offset = new Vector3(0f, 1.5f, 0f);
+        [SerializeField] private float _maxVisibleDistance = 100f;
+        [SerializeField] private float _fadeStartDistance = 80f;
+        [SerializeField] private Vector3 _worldOffset = new Vector3(0f, 2.0f, 0f);
 
         private Camera _mainCamera;
         private Transform _cameraTransform;
+        private RectTransform _rectTransform;
+        private Canvas _screenSpaceCanvas;
+        private static Canvas _sharedScreenSpaceCanvas;
 
         private void Awake()
         {
-            // 自身のCharacterコンポーネントを取得
-            if (_character == null)
-            {
-                _character = GetComponentInParent<Character>();
-            }
+            _rectTransform = GetComponent<RectTransform>();
 
             // CanvasGroupを取得
-            if (_canvasGroup == null && _canvas != null)
+            if (_canvasGroup == null)
             {
-                _canvasGroup = _canvas.GetComponent<CanvasGroup>();
+                _canvasGroup = GetComponent<CanvasGroup>();
             }
         }
 
@@ -50,15 +47,62 @@ namespace PerformanceTraining.Core
                 _cameraTransform = _mainCamera.transform;
             }
 
-            // 初期化
+            // Screen Space Canvasに再ペアレント
+            ReparentToScreenSpaceCanvas();
+
+            // _characterがあればUIを更新（Initializeで設定済みの場合）
             if (_character != null)
             {
                 UpdateUI();
-
-                // イベント登録
-                _character.OnDamaged += OnCharacterDamaged;
-                _character.OnDeath += OnCharacterDeath;
             }
+        }
+
+        /// <summary>
+        /// Screen Space Canvasを取得または作成し、自身を子として設定
+        /// </summary>
+        private void ReparentToScreenSpaceCanvas()
+        {
+            if (_sharedScreenSpaceCanvas == null)
+            {
+                // 既存のScreen Space Canvasを探す
+                var existingCanvas = GameObject.Find("CharacterUICanvas");
+                if (existingCanvas != null)
+                {
+                    _sharedScreenSpaceCanvas = existingCanvas.GetComponent<Canvas>();
+                }
+
+                // なければ作成
+                if (_sharedScreenSpaceCanvas == null)
+                {
+                    var canvasObj = new GameObject("CharacterUICanvas");
+                    _sharedScreenSpaceCanvas = canvasObj.AddComponent<Canvas>();
+                    _sharedScreenSpaceCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    _sharedScreenSpaceCanvas.sortingOrder = 100;
+
+                    // CanvasScaler設定（1920x1080基準、Height優先）
+                    var scaler = canvasObj.AddComponent<CanvasScaler>();
+                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                    scaler.referenceResolution = new Vector2(1920f, 1080f);
+                    scaler.matchWidthOrHeight = 1f; // Height優先
+
+                    canvasObj.AddComponent<GraphicRaycaster>();
+                    DontDestroyOnLoad(canvasObj);
+                }
+            }
+
+            _screenSpaceCanvas = _sharedScreenSpaceCanvas;
+
+            // 自身を再ペアレント
+            transform.SetParent(_screenSpaceCanvas.transform, false);
+
+            // RectTransform設定
+            if (_rectTransform == null)
+            {
+                _rectTransform = gameObject.AddComponent<RectTransform>();
+            }
+            _rectTransform.anchorMin = Vector2.zero;
+            _rectTransform.anchorMax = Vector2.zero;
+            _rectTransform.pivot = new Vector2(0.5f, 0f);
         }
 
         private void OnDestroy()
@@ -72,29 +116,46 @@ namespace PerformanceTraining.Core
 
         private void LateUpdate()
         {
-            if (_character == null || !_character.IsAlive || _cameraTransform == null)
+            if (_character == null || !_character.IsAlive || _mainCamera == null)
             {
                 SetVisible(false);
                 return;
             }
 
-            // 位置をキャラクターの頭上に設定
-            transform.position = _character.transform.position + _offset;
+            // キャラクターのワールド座標 + オフセット
+            Vector3 worldPos = _character.transform.position + _worldOffset;
 
-            // カメラの方を向く（Y軸ビルボード - 上下には傾けない）
-            Vector3 lookDir = transform.position - _cameraTransform.position;
-            lookDir.y = 0f;
-            if (lookDir.sqrMagnitude > 0.001f)
+            // カメラの後ろにいる場合は非表示
+            Vector3 toCharacter = worldPos - _cameraTransform.position;
+            if (Vector3.Dot(_cameraTransform.forward, toCharacter) < 0)
             {
-                transform.rotation = Quaternion.LookRotation(lookDir);
+                SetVisible(false);
+                return;
             }
 
+            // ワールド座標をスクリーン座標に変換
+            Vector3 screenPos = _mainCamera.WorldToScreenPoint(worldPos);
+
+            // 画面外の場合は非表示
+            if (screenPos.x < 0 || screenPos.x > Screen.width ||
+                screenPos.y < 0 || screenPos.y > Screen.height)
+            {
+                SetVisible(false);
+                return;
+            }
+
+            // CanvasScalerを考慮した座標変換（1920x1080基準、Height優先）
+            float scaleFactor = Screen.height / 1080f;
+            Vector2 canvasPos = new Vector2(screenPos.x / scaleFactor, screenPos.y / scaleFactor);
+
+            // RectTransformの位置を更新
+            _rectTransform.anchoredPosition = canvasPos;
+
             // カメラとの距離による表示制御
-            float distance = Vector3.Distance(transform.position, _cameraTransform.position);
+            float distance = Vector3.Distance(worldPos, _cameraTransform.position);
 
             if (distance > _maxVisibleDistance)
             {
-                // 距離が遠すぎる場合は非表示
                 SetVisible(false);
             }
             else
@@ -118,6 +179,9 @@ namespace PerformanceTraining.Core
                         _canvasGroup.alpha = 1f;
                     }
                 }
+
+                // スケールは常に1
+                _rectTransform.localScale = Vector3.one;
             }
         }
 
@@ -138,10 +202,12 @@ namespace PerformanceTraining.Core
 
         private void SetVisible(bool visible)
         {
-            if (_canvas != null)
+            if (_canvasGroup != null)
             {
-                _canvas.enabled = visible;
+                _canvasGroup.alpha = visible ? 1f : 0f;
+                _canvasGroup.blocksRaycasts = visible;
             }
+            gameObject.SetActive(visible);
         }
 
         private void OnCharacterDamaged(Character character, float damage)
@@ -151,7 +217,8 @@ namespace PerformanceTraining.Core
 
         private void OnCharacterDeath(Character character)
         {
-            SetVisible(false);
+            // キャラクター死亡時はUI自体を破棄
+            Destroy(gameObject);
         }
 
         /// <summary>

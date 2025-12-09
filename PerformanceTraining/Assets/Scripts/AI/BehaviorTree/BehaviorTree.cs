@@ -19,7 +19,7 @@ namespace PerformanceTraining.AI.BehaviorTree
         [SerializeField] protected string _currentNodeName;
         [SerializeField] protected NodeState _currentState;
 
-        // デバッグ用AIログ文字列（毎フレーム更新）
+        // AIログ文字列
         private string _aiDebugLog;
         public string AIDebugLog => _aiDebugLog;
 
@@ -69,8 +69,6 @@ namespace PerformanceTraining.AI.BehaviorTree
             if (!_isActive || _rootNode == null) return;
             if (_owner != null && !_owner.IsAlive) return;
 
-            // TODO: パフォーマンス課題 - 毎フレーム文字列結合によるGC Alloc
-            // 最適化: StringBuilderを使用して再利用する
             BuildAIDebugLog();
 
             _updateTimer += Time.deltaTime;
@@ -92,8 +90,7 @@ namespace PerformanceTraining.AI.BehaviorTree
         }
 
         /// <summary>
-        /// AIデバッグログを構築（毎フレーム）
-        /// ボトルネック: 文字列結合による GC Alloc
+        /// デバッグログ
         /// </summary>
         private void BuildAIDebugLog()
         {

@@ -14,6 +14,7 @@ namespace PerformanceTraining.Core
         [SerializeField] private CharacterPrefabList _prefabList;
         [SerializeField] private GameObject _characterPrefab; // フォールバック用
         [SerializeField] private GameObject _attackEffectPrefab;
+        [SerializeField] private GameObject _characterUIPrefab; // キャラクターUI用プレハブ
 
         [Header("Spawn Settings")]
         [SerializeField] private int _initialSpawnCount = 200;
@@ -109,7 +110,25 @@ namespace PerformanceTraining.Core
                 obj.AddComponent<CharacterAI>();
             }
 
+            // CharacterUIを生成
+            SpawnCharacterUI(character);
+
             return character;
+        }
+
+        /// <summary>
+        /// キャラクター用のUIを生成
+        /// </summary>
+        private void SpawnCharacterUI(Character character)
+        {
+            if (_characterUIPrefab == null) return;
+
+            var uiObj = Instantiate(_characterUIPrefab);
+            var characterUI = uiObj.GetComponent<CharacterUI>();
+            if (characterUI != null)
+            {
+                characterUI.Initialize(character);
+            }
         }
 
         /// <summary>

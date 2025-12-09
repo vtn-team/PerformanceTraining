@@ -35,11 +35,11 @@ namespace PerformanceTraining.Core
         public IReadOnlyList<Character> AllCharacters => _allCharacters;
         public IReadOnlyList<Character> AliveCharacters => _aliveCharacters;
 
-        // 統計情報文字列（毎フレーム更新）
+        // 統計情報文字列
         private string _statsString;
         public string StatsString => _statsString;
 
-        // 行動ログ（別クラスに移譲）
+        // 行動ログ
         private readonly ActionLogger _actionLogger = new ActionLogger();
         public string ActionLogString => _actionLogger.LogString;
 
@@ -53,8 +53,6 @@ namespace PerformanceTraining.Core
 
         private void Update()
         {
-            // TODO: パフォーマンス課題 - 毎フレーム文字列結合によるGC Alloc
-            // 最適化: StringBuilderを使用、または更新頻度を下げる
             BuildStatsString();
 
             // 行動ログの更新
@@ -62,18 +60,16 @@ namespace PerformanceTraining.Core
         }
 
         /// <summary>
-        /// 統計情報文字列を構築（毎フレーム）
-        /// ボトルネック: 文字列結合による GC Alloc
+        /// 統計情報文字列を構築
         /// </summary>
         private void BuildStatsString()
         {
-            // ボトルネック: 複数回の文字列結合と数値のToString()
             _statsString = "=== Battle Royale Stats ===\n";
             _statsString = _statsString + "Alive: " + _aliveCount.ToString() + " / " + _totalSpawned.ToString() + "\n";
             _statsString = _statsString + "Kills: " + _totalKills.ToString() + "\n";
             _statsString = _statsString + "Time: " + Time.time.ToString("F2") + "s\n";
 
-            // タイプ別の生存数を追加（さらにGC Allocを増やす）
+            // タイプ別の生存数を追加
             _statsString = _statsString + "--- By Type ---\n";
             foreach (CharacterType type in Enum.GetValues(typeof(CharacterType)))
             {
@@ -387,7 +383,7 @@ namespace PerformanceTraining.Core
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             // TODO: この処理を最適化してください
-
+            // ここから
             List<Character> candidates = new List<Character>();
             foreach (var c in _aliveCharacters)
             {
@@ -400,6 +396,7 @@ namespace PerformanceTraining.Core
             candidates = SortByPathfindingDistance(candidates, attacker);
             candidates = FilterByHP(candidates, _minTargetHP, _maxTargetHP);
             candidates = FilterByDistance(candidates, attacker, _maxAttackDistance);
+            // ここまでの処理を並び替えましょう
 
             stopwatch.Stop();
             _lastExecutionTimeMs = (float)stopwatch.Elapsed.TotalMilliseconds;
