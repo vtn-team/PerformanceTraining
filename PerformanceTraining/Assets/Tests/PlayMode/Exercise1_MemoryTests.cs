@@ -6,7 +6,6 @@ using UnityEngine.TestTools;
 using UnityEngine.SceneManagement;
 using Unity.Profiling;
 using PerformanceTraining.Core;
-using PerformanceTraining.AI.BehaviorTree;
 
 namespace PerformanceTraining.Tests
 {
@@ -24,6 +23,7 @@ namespace PerformanceTraining.Tests
         private static bool _sceneLoaded = false;
         private CharacterManager _characterManager;
         private Character[] _characters;
+        private CharacterUI[] _characterUIs;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
@@ -51,6 +51,7 @@ namespace PerformanceTraining.Tests
 
             _characterManager = Object.FindAnyObjectByType<CharacterManager>();
             _characters = Object.FindObjectsByType<Character>(FindObjectsSortMode.None);
+            _characterUIs = Object.FindObjectsByType<CharacterUI>(FindObjectsSortMode.None);
 
             yield return null;
         }
@@ -120,120 +121,147 @@ namespace PerformanceTraining.Tests
 
         [UnityTest]
         [Order(2)]
-        public IEnumerator Test_02_Character_UpdateDebugStatus_GCAlloc()
+        public IEnumerator Test_02_CharacterUI_UpdateNameText_GCAlloc()
         {
-            Assert.IsTrue(_characters.Length > 0, "キャラクターが見つかりません");
+            Assert.IsTrue(_characterUIs.Length > 0, "CharacterUI が見つかりません");
 
-            var character = _characters[0];
-            var updateMethod = typeof(Character).GetMethod("UpdateDebugStatus",
+            // 有効なCharacterUIを探す（_characterと_nameTextがnullでないもの）
+            CharacterUI validUI = null;
+            var characterField = typeof(CharacterUI).GetField("_character",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            var nameTextField = typeof(CharacterUI).GetField("_nameText",
                 BindingFlags.NonPublic | BindingFlags.Instance);
 
-            if (updateMethod == null)
+            foreach (var ui in _characterUIs)
             {
-                Assert.Inconclusive("UpdateDebugStatus メソッドが存在しません（スキップ）");
-                yield break;
+                var character = characterField?.GetValue(ui);
+                var nameText = nameTextField?.GetValue(ui);
+                if (character != null && nameText != null)
+                {
+                    validUI = ui;
+                    break;
+                }
             }
 
+            Assert.IsNotNull(validUI, "有効なCharacterUIが見つかりません（_characterまたは_nameTextがnull）");
+
+            var updateMethod = typeof(CharacterUI).GetMethod("UpdateNameText",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            Assert.IsNotNull(updateMethod, "UpdateNameText メソッドが見つかりません");
+
+            // 100回呼び出してGC Allocを計測
             long gcAlloc = MeasureGCAlloc(() =>
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    updateMethod.Invoke(character, null);
+                    updateMethod.Invoke(validUI, null);
                 }
             });
 
-            Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"Character.UpdateDebugStatus: GC Allocが多すぎます。\n" +
+            // 最適化されていれば100回で1KB以下になるはず
+            // 未最適化の場合、毎回文字列結合で数百バイト発生する（100回で数十KB）
+            const long MAX_OPTIMIZED_ALLOC = 1024; // 1KB以下が目標
+
+            Debug.Log($"[CharacterUI Test] GC Alloc: {gcAlloc:N0} bytes / 100回");
+
+            Assert.LessOrEqual(gcAlloc, MAX_OPTIMIZED_ALLOC,
+                $"CharacterUI.UpdateNameText: GC Allocが多すぎます。\n" +
                 $"現在: {gcAlloc:N0} bytes / 100回\n" +
-                $"目標: {MAX_ALLOWED_GC_ALLOC * 100:N0} bytes 以下\n\n" +
-                "【修正方法】StringBuilderを使用して文字列結合を最適化");
+                $"目標: {MAX_OPTIMIZED_ALLOC:N0} bytes 以下\n\n" +
+                "【修正方法】\n" +
+                "1. StringBuilderを使用して文字列結合を最適化\n" +
+                "2. または値が変化した時のみテキストを更新");
 
             yield return null;
         }
 
         [UnityTest]
         [Order(3)]
-        public IEnumerator Test_03_BehaviorTree_BuildAIDebugLog_GCAlloc()
-        {
-            var behaviorTrees = Object.FindObjectsByType<BehaviorTreeBase>(FindObjectsSortMode.None);
-
-            if (behaviorTrees.Length == 0)
-            {
-                Assert.Inconclusive("BehaviorTree が存在しません（スキップ）");
-                yield break;
-            }
-
-            var bt = behaviorTrees[0];
-            var buildMethod = typeof(BehaviorTreeBase).GetMethod("BuildAIDebugLog",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (buildMethod == null)
-            {
-                Assert.Inconclusive("BuildAIDebugLog メソッドが存在しません（スキップ）");
-                yield break;
-            }
-
-            long gcAlloc = MeasureGCAlloc(() =>
-            {
-                for (int i = 0; i < 100; i++)
-                {
-                    buildMethod.Invoke(bt, null);
-                }
-            });
-
-            Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"BehaviorTreeBase.BuildAIDebugLog: GC Allocが多すぎます。\n" +
-                $"現在: {gcAlloc:N0} bytes / 100回\n" +
-                $"目標: {MAX_ALLOWED_GC_ALLOC * 100:N0} bytes 以下\n\n" +
-                "【修正方法】StringBuilderを使用して文字列結合を最適化");
-
-            yield return null;
-        }
-
-        [UnityTest]
-        [Order(4)]
-        public IEnumerator Test_04_ObjectPool_SpawnAttackEffect()
+        public IEnumerator Test_03_GCSpike_LongRunning()
         {
             Assert.IsNotNull(_characterManager, "CharacterManager が見つかりません");
-            Assert.GreaterOrEqual(_characterManager.AliveCount, MIN_CHARACTER_COUNT,
-                "キャラクターが不足しています");
 
-            // ゲームプレイ中の最大エフェクト数を記録
-            int maxEffectCount = 0;
-            int sampleCount = 0;
+            // テスト設定
+            const float BASELINE_DURATION = 5f;   // 最初の5秒でベースライン計測
+            const float TEST_DURATION = 30f;      // 合計30秒間テスト
+            const float SPIKE_MARGIN_MS = 10f;    // 中央値+10ms以上をスパイクとみなす
+            const int MAX_ALLOWED_SPIKES = 3;     // 許容するスパイク回数
 
-            // 3秒間ゲームプレイを観察
-            float observeTime = 3.0f;
             float elapsed = 0f;
+            var baselineFrameTimes = new System.Collections.Generic.List<float>();
 
-            while (elapsed < observeTime)
+            Debug.Log($"[GC Spike Test] 開始: ベースライン計測 {BASELINE_DURATION}秒");
+
+            // Phase 1: 最初の5秒間でベースライン（中央値）を計測
+            while (elapsed < BASELINE_DURATION)
             {
-                // 現在のエフェクト数をカウント
-                int currentCount = CountObjectsContaining("Effect");
-                if (currentCount > maxEffectCount)
-                {
-                    maxEffectCount = currentCount;
-                }
-                sampleCount++;
-
-                yield return new WaitForSeconds(0.1f);
-                elapsed += 0.1f;
+                float frameTimeMs = Time.deltaTime * 1000f;
+                baselineFrameTimes.Add(frameTimeMs);
+                elapsed += Time.deltaTime;
+                yield return null;
             }
 
-            // Object Poolが実装されていれば、最大エフェクト数はプールサイズ程度に収まる
-            // 未実装の場合、エフェクトが大量に生成される（Destroyまでの0.5秒間蓄積）
-            const int MAX_EXPECTED_EFFECTS = 20; // Pool実装時の想定最大数
+            // 中央値を計算
+            baselineFrameTimes.Sort();
+            float medianFrameTime = baselineFrameTimes[baselineFrameTimes.Count / 2];
+            float spikeThreshold = medianFrameTime + SPIKE_MARGIN_MS;
 
-            Debug.Log($"[ObjectPool Test] 観測時間: {observeTime}s, サンプル数: {sampleCount}, 最大エフェクト数: {maxEffectCount}");
+            Debug.Log($"[GC Spike Test] ベースライン中央値: {medianFrameTime:F2}ms, スパイク閾値: {spikeThreshold:F2}ms");
 
-            Assert.LessOrEqual(maxEffectCount, MAX_EXPECTED_EFFECTS,
-                $"ObjectPool: 未実装または不十分です。\n" +
-                $"ゲームプレイ中の最大エフェクト数: {maxEffectCount} 個\n" +
-                $"目標: {MAX_EXPECTED_EFFECTS} 個以下（プールから再利用）\n\n" +
-                "【実装方法】Character.cs の SpawnAttackEffect を修正:\n" +
-                "1. ObjectPoolを作成（Queue<GameObject>等）\n" +
-                "2. Instantiate → Pool.Get() に置き換え\n" +
-                "3. Destroy → Pool.Return() に置き換え");
+            // Phase 2: 残りの時間でスパイクを検出
+            int spikeCount = 0;
+            float maxFrameTime = 0f;
+            int testFrameCount = 0;
+            var spikeFrameTimes = new System.Collections.Generic.List<float>();
+
+            while (elapsed < TEST_DURATION)
+            {
+                float frameTimeMs = Time.deltaTime * 1000f;
+                testFrameCount++;
+
+                if (frameTimeMs > maxFrameTime)
+                {
+                    maxFrameTime = frameTimeMs;
+                }
+
+                // スパイク検出
+                if (frameTimeMs > spikeThreshold)
+                {
+                    spikeCount++;
+                    spikeFrameTimes.Add(frameTimeMs);
+                }
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            // スパイク情報をログ出力
+            string spikeInfo = spikeFrameTimes.Count > 0
+                ? string.Join(", ", spikeFrameTimes.ConvertAll(t => $"{t:F1}ms"))
+                : "なし";
+
+            Debug.Log($"[GC Spike Test] 結果:\n" +
+                $"  テスト時間: {elapsed:F1}s\n" +
+                $"  ベースラインフレーム数: {baselineFrameTimes.Count}\n" +
+                $"  テストフレーム数: {testFrameCount}\n" +
+                $"  ベースライン中央値: {medianFrameTime:F2}ms\n" +
+                $"  最大フレーム時間: {maxFrameTime:F2}ms\n" +
+                $"  スパイク閾値: {spikeThreshold:F2}ms (中央値+{SPIKE_MARGIN_MS}ms)\n" +
+                $"  スパイク回数: {spikeCount}\n" +
+                $"  スパイク詳細: {spikeInfo}");
+
+            Assert.LessOrEqual(spikeCount, MAX_ALLOWED_SPIKES,
+                $"GCスパイク: 頻繁なGCによるフレーム落ちが検出されました。\n" +
+                $"スパイク回数: {spikeCount} 回（中央値+{SPIKE_MARGIN_MS}ms超過）\n" +
+                $"許容回数: {MAX_ALLOWED_SPIKES} 回以下\n" +
+                $"スパイク閾値: {spikeThreshold:F1}ms\n" +
+                $"最大フレーム時間: {maxFrameTime:F1}ms\n" +
+                $"ベースライン中央値: {medianFrameTime:F1}ms\n\n" +
+                "【原因と対策】\n" +
+                "1. ObjectPoolを実装してInstantiate/Destroyを削減\n" +
+                "2. StringBuilderで文字列結合を最適化\n" +
+                "3. 毎フレームのnew List<>()等を避ける");
 
             yield return null;
         }

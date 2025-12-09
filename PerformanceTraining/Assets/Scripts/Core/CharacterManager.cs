@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 
+#pragma warning disable 0414 // 課題用フィールド: 学生が実装時に使用
+
 namespace PerformanceTraining.Core
 {
     /// <summary>
@@ -327,18 +329,7 @@ namespace PerformanceTraining.Core
             return counts;
         }
 
-        // ================================================================
-        // 【課題2: CPU最適化】空間分割による近傍検索
-        // ================================================================
-        //
-        // TODO: 以下のメソッドを最適化してください
-        // - GetCellIndex: 座標からグリッドセルのインデックスを計算
-        // - UpdateSpatialGrid: グリッドにキャラクターを登録
-        // - GetNearbyCharactersOptimized: 周辺9セルからキャラクターを取得
-        // - FindBestAttackTarget: 攻撃対象を効率的に検索
-
         // 空間分割用のデータ構造
-        // TODO: Dictionary<int, List<Character>> でグリッドを実装してください
         private Dictionary<int, List<Character>> _spatialGrid = new Dictionary<int, List<Character>>();
         private List<Character> _nearbyResult = new List<Character>();
 
@@ -347,41 +338,27 @@ namespace PerformanceTraining.Core
 
         /// <summary>
         /// 座標からセルインデックスを計算する
-        /// TODO: 実装してください
         /// </summary>
         public int GetCellIndex(Vector3 position)
         {
-            // TODO: 実装してください
-            // ワールド座標を1次元のセルインデックスに変換
-            // フィールド範囲: -FIELD_HALF_SIZE ～ +FIELD_HALF_SIZE
-            // ヒント: x = (position.x + FIELD_HALF_SIZE) / cellSize
-            //        z = (position.z + FIELD_HALF_SIZE) / cellSize
-            //        index = z * gridWidth + x
-            return 0; // 未実装: 常に0を返す
+            // TODO: ワールド座標を1次元のセルインデックスに変換する処理を実装してください
+            return 0;
         }
 
         /// <summary>
         /// 空間グリッドを更新する
-        /// TODO: 実装してください
         /// </summary>
         public void UpdateSpatialGrid()
         {
-            // TODO: 実装してください
-            // 1. グリッドをクリア（各セルのリストをClear）
-            // 2. 各キャラクターの位置からセルインデックスを計算
-            // 3. 該当セルにキャラクターを追加
+            // TODO: 全キャラクターをグリッドに登録する処理を実装してください
         }
 
         /// <summary>
         /// 指定位置周辺のキャラクターを取得する（最適化版）
-        /// TODO: GetCellIndexを実装後、このメソッドを完成させてください
         /// </summary>
         public List<Character> GetNearbyCharactersOptimized(Vector3 position, Character excludeCharacter)
         {
-            // TODO: 実装してください
-            // 周辺9セル（3x3）からキャラクターを取得
-            // 中心セルと周囲8セルをループして、各セルのキャラクターをリストに追加
-
+            // TODO: 空間分割を使って近傍のキャラクターのみを返すよう実装してください
             // 現在は非最適化版: 全キャラクターを返す
             _nearbyResult.Clear();
             foreach (var c in _aliveCharacters)
@@ -394,10 +371,6 @@ namespace PerformanceTraining.Core
             return _nearbyResult;
         }
 
-        // ================================================================
-        // 【課題2: CPU最適化】処理順序の最適化
-        // ================================================================
-
         [SerializeField] private float _maxAttackDistance = 20f;
         [SerializeField] private float _minTargetHP = 10f;
         [SerializeField] private float _maxTargetHP = 100f;
@@ -406,7 +379,6 @@ namespace PerformanceTraining.Core
 
         /// <summary>
         /// 攻撃対象を検索する
-        /// TODO: 処理順序を最適化してください（軽い処理を先に、重い処理を後に）
         /// </summary>
         public Character FindBestAttackTarget(Character attacker)
         {
@@ -414,12 +386,8 @@ namespace PerformanceTraining.Core
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-            // ============================================================
-            // 【最悪効率の呼び出し順序 - 並び替えてください】
-            // ============================================================
+            // TODO: この処理を最適化してください
 
-            // Step A: まず全キャラクターを取得（非効率）
-            // TODO: GetNearbyCharactersOptimized に置き換え
             List<Character> candidates = new List<Character>();
             foreach (var c in _aliveCharacters)
             {
@@ -429,13 +397,8 @@ namespace PerformanceTraining.Core
                 }
             }
 
-            // Step B: 全員に対して重い経路探索を実行（最も重い処理を最初に = 最悪）
             candidates = SortByPathfindingDistance(candidates, attacker);
-
-            // Step C: HP条件でフィルタ（経路探索後 = 無駄）
             candidates = FilterByHP(candidates, _minTargetHP, _maxTargetHP);
-
-            // Step D: 距離条件でフィルタ（一番軽い処理を最後に = 最悪）
             candidates = FilterByDistance(candidates, attacker, _maxAttackDistance);
 
             stopwatch.Stop();

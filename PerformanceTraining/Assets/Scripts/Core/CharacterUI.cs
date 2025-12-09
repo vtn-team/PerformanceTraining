@@ -101,8 +101,7 @@ namespace PerformanceTraining.Core
             {
                 SetVisible(true);
 
-                // TODO: パフォーマンス課題 - 毎フレーム文字列結合によるGC Alloc
-                // 最適化: StringBuilderを使用、または変更時のみ更新
+                // 名前とHP表示を更新
                 UpdateNameText();
 
                 // フェード処理
@@ -123,18 +122,18 @@ namespace PerformanceTraining.Core
         }
 
         /// <summary>
-        /// 名前テキストを更新（名前のみ表示、HP%はバーで表示）
+        /// 名前テキストを更新
         /// </summary>
         private void UpdateNameText()
         {
             if (_nameText == null || _character == null) return;
 
-            // 名前のみ表示（HPはバーで表示されるため）
-            // 注: 変更がある場合のみ更新することでGC Allocを削減可能
-            if (_nameText.text != _character.CharacterName)
-            {
-                _nameText.text = _character.CharacterName;
-            }
+            // TODO: この実装を最適化してください
+            // 毎フレーム文字列結合によりGC Allocが発生します
+            string displayText = _character.CharacterName + " HP:" +
+                Mathf.RoundToInt(_character.Stats.currentHealth).ToString() + "/" +
+                Mathf.RoundToInt(_character.Stats.maxHealth).ToString();
+            _nameText.text = displayText;
         }
 
         private void SetVisible(bool visible)

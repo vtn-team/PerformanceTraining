@@ -5,27 +5,7 @@ using PerformanceTraining.Core;
 namespace PerformanceTraining.Exercises.Tradeoff
 {
     /// <summary>
-    /// 【課題3: トレードオフ - GPU Instancing】
-    ///
-    /// ■ 実装項目: GPU Instancingで描画を最適化せよ
-    ///
-    /// 修正箇所は2つ：
-    ///
-    /// ① CollectInstanceData(): 描画データの収集
-    ///    - 各キャラクターのTransformからMatrix4x4を作成
-    ///    - 個別プロパティ（色など）をVector4配列に格納
-    ///
-    /// ② RenderInstanced(): 一括描画の実行
-    ///    - Graphics.DrawMeshInstanced() を使用
-    ///    - MaterialPropertyBlock で個別プロパティを設定
-    ///
-    /// 【トレードオフ】
-    /// メモリ: Matrix4x4配列 + プロパティ配列（キャラクター数 × データサイズ）
-    /// GPU: Draw Call削減（200回 → 1回）
-    ///
-    /// 【確認方法】
-    /// Game View → Stats → Batches の数値を確認
-    /// Window → Analysis → Frame Debugger で Draw Call を確認
+    /// GPU Instancingによる描画最適化
     /// </summary>
     public class GPUInstancing_Exercise : MonoBehaviour
     {
@@ -49,7 +29,7 @@ namespace PerformanceTraining.Exercises.Tradeoff
 
         private void Awake()
         {
-            _characterManager = FindObjectOfType<CharacterManager>();
+            _characterManager = FindAnyObjectByType<CharacterManager>();
 
             // 配列を事前確保
             _matrices = new Matrix4x4[MAX_INSTANCES];
@@ -85,8 +65,6 @@ namespace PerformanceTraining.Exercises.Tradeoff
 
         /// <summary>
         /// インスタンシング用のデータを収集する
-        ///
-        /// 【課題】この関数を実装してください
         /// </summary>
         /// <returns>収集したインスタンス数</returns>
         private int CollectInstanceData()
@@ -94,12 +72,7 @@ namespace PerformanceTraining.Exercises.Tradeoff
             var characters = _characterManager.AliveCharacters;
             int count = Mathf.Min(characters.Count, MAX_INSTANCES);
 
-            // TODO: 実装してください
-            // 1. 各キャラクターのTransformからMatrix4x4を作成
-            //    _matrices[i] = characters[i].transform.localToWorldMatrix;
-            //
-            // 2. 各キャラクターの色を取得（キャラクタータイプに応じて）
-            //    _colors[i] = GetColorForCharacter(characters[i]);
+            // TODO: 各キャラクターの変換行列と色を収集してください
 
             int collectedCount = 0;
             for (int i = 0; i < count; i++)
@@ -107,32 +80,21 @@ namespace PerformanceTraining.Exercises.Tradeoff
                 var character = characters[i];
                 if (character == null) continue;
 
-                // TODO: 以下のコメントを外して実装してください
-                // _matrices[collectedCount] = character.transform.localToWorldMatrix;
-                // _colors[collectedCount] = GetColorForCharacter(character);
-                // collectedCount++;
+                // TODO: ここで _matrices と _colors に値を設定してください
             }
 
-            // 未実装時は0を返す（実装後は collectedCount を返す）
             return collectedCount;
         }
 
         /// <summary>
         /// GPU Instancingで一括描画する
-        ///
-        /// 【課題】この関数を実装してください
         /// </summary>
         /// <param name="count">描画するインスタンス数</param>
         private void RenderInstanced(int count)
         {
             if (_characterMesh == null || _instanceMaterial == null) return;
 
-            // TODO: 実装してください
-            // 1. MaterialPropertyBlock に色配列を設定
-            //    _propertyBlock.SetVectorArray("_Color", _colors);
-            //
-            // 2. Graphics.DrawMeshInstanced() で一括描画
-            //    Graphics.DrawMeshInstanced(_characterMesh, 0, _instanceMaterial, _matrices, count, _propertyBlock);
+            // TODO: MaterialPropertyBlock と Graphics.DrawMeshInstanced を使って一括描画してください
         }
 
         /// <summary>

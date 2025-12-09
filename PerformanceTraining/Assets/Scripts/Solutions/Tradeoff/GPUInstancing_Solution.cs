@@ -43,7 +43,7 @@ namespace PerformanceTraining.Solutions.Tradeoff
 
         private void Awake()
         {
-            _characterManager = FindObjectOfType<CharacterManager>();
+            _characterManager = FindAnyObjectByType<CharacterManager>();
 
             _matrices = new Matrix4x4[MAX_INSTANCES];
             _colors = new Vector4[MAX_INSTANCES];

@@ -1,6 +1,8 @@
 using UnityEngine;
 using PerformanceTraining.Core;
 
+#pragma warning disable 0414 // 将来の拡張用フィールド
+
 namespace PerformanceTraining.Enemy
 {
     /// <summary>

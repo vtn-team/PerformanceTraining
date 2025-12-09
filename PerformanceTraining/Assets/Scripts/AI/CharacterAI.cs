@@ -3,6 +3,8 @@ using PerformanceTraining.Core;
 using PerformanceTraining.AI.BehaviorTree;
 using PerformanceTraining.AI.BehaviorTree.Nodes;
 
+#pragma warning disable 0414 // 将来の拡張用フィールド
+
 namespace PerformanceTraining.AI
 {
     /// <summary>

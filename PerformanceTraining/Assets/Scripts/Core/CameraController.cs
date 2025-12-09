@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Collections;
 
+#pragma warning disable 0414 // 将来の拡張用フィールド
+
 namespace PerformanceTraining.Core
 {
     /// <summary>
@@ -108,13 +110,13 @@ namespace PerformanceTraining.Core
 
         private void HandleCharacterJump()
         {
-            // 左クリックで次のキャラクター
-            if (Input.GetMouseButtonDown(0))
+            // Zキーで次のキャラクター
+            if (Input.GetKeyDown(KeyCode.Z))
             {
                 JumpToNextCharacter();
             }
-            // 右クリックで前のキャラクター
-            if (Input.GetMouseButtonDown(1))
+            // Xキーで前のキャラクター
+            if (Input.GetKeyDown(KeyCode.X))
             {
                 JumpToPreviousCharacter();
             }

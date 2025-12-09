@@ -645,6 +645,13 @@ namespace PerformanceTraining.Editor
 
             // 課題選択
             EditorGUILayout.BeginHorizontal();
+
+            // 操作説明ボタン
+            if (GUILayout.Button("?", buttonStyle, GUILayout.Width(30), GUILayout.Height(25)))
+            {
+                ShowControlsHelp();
+            }
+
             GUILayout.Label("課題を選択:", boldLabelStyle, GUILayout.Width(100));
             selectedExercise = (ExerciseType)EditorGUILayout.EnumPopup(selectedExercise, GUILayout.Height(25));
             EditorGUILayout.EndHorizontal();
@@ -1026,6 +1033,23 @@ namespace PerformanceTraining.Editor
             rect.height = 2;
             EditorGUI.DrawRect(rect, new Color(0.4f, 0.4f, 0.4f, 1));
             EditorGUILayout.Space(5);
+        }
+
+        private void ShowControlsHelp()
+        {
+            EditorUtility.DisplayDialog("操作説明",
+                "【カメラ操作】\n" +
+                "・WASD / 矢印キー: カメラ移動\n" +
+                "・Shift + 移動: 高速移動\n" +
+                "・マウスホイール: ズーム\n" +
+                "・画面端にマウス: スクロール\n\n" +
+                "【キャラクター】\n" +
+                "・Z: 次のキャラクターにフォーカス\n" +
+                "・X: 前のキャラクターにフォーカス\n\n" +
+                "【その他】\n" +
+                "・I: GPU Instancing ON/OFF（課題3）\n" +
+                "・Space: ポーズ",
+                "OK");
         }
     }
 }

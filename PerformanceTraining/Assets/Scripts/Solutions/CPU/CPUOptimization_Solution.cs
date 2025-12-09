@@ -42,7 +42,7 @@ namespace PerformanceTraining.Solutions.CPU
 
         private void Awake()
         {
-            _characterManager = FindObjectOfType<CharacterManager>();
+            _characterManager = FindAnyObjectByType<CharacterManager>();
 
             // 【解答】空間グリッドを初期化
             _spatialGrid = new Dictionary<int, List<Character>>();

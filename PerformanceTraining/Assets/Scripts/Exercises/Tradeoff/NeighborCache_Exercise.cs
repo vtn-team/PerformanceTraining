@@ -4,6 +4,8 @@ using PerformanceTraining.Core;
 using EnemyClass = PerformanceTraining.Enemy.Enemy;
 using EnemySystem = PerformanceTraining.Enemy.EnemySystem;
 
+#pragma warning disable 0414 // 課題用フィールド: 学生が実装時に使用
+
 namespace PerformanceTraining.Exercises.Tradeoff
 {
     /// <summary>
