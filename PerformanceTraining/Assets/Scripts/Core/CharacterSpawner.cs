@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using PerformanceTraining.AI;
 
 namespace PerformanceTraining.Core
 {
@@ -101,6 +102,12 @@ namespace PerformanceTraining.Core
 
             character.Initialize(_nextId, type);
             _nextId++;
+
+            // AIコンポーネントを追加（なければ）
+            if (obj.GetComponent<CharacterAI>() == null)
+            {
+                obj.AddComponent<CharacterAI>();
+            }
 
             return character;
         }

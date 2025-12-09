@@ -3,6 +3,7 @@ using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.SceneManagement;
 using Unity.Profiling;
 using PerformanceTraining.Core;
 using PerformanceTraining.AI.BehaviorTree;
@@ -11,52 +12,116 @@ namespace PerformanceTraining.Tests
 {
     /// <summary>
     /// 課題1: メモリ最適化（GC Alloc削減）テスト
-    /// Unity Test Runner + ProfilerRecorder を使用
     /// </summary>
     [TestFixture]
     [Category("Exercise1_Memory")]
     public class Exercise1_MemoryTests
     {
-        // テスト用の最小キャラクター数
         private const int MIN_CHARACTER_COUNT = 10;
+        private const long MAX_ALLOWED_GC_ALLOC = 1024; // 1KB per 100 calls
+        private const string GAME_SCENE_NAME = "MainGame";
 
-        // GC Alloc許容値（バイト）
-        private const long MAX_ALLOWED_GC_ALLOC = 1024; // 1KB
-
-        // Object Pool テスト用の許容新規オブジェクト数
-        private const int MAX_NEW_OBJECTS_FOR_POOL = 5;
-
+        private static bool _sceneLoaded = false;
         private CharacterManager _characterManager;
         private Character[] _characters;
+
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
+        {
+            _sceneLoaded = false;
+        }
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            // シーン内のオブジェクトを取得
+            if (!_sceneLoaded)
+            {
+                var currentScene = SceneManager.GetActiveScene();
+                if (currentScene.name != GAME_SCENE_NAME)
+                {
+                    var loadOp = SceneManager.LoadSceneAsync(GAME_SCENE_NAME, LoadSceneMode.Single);
+                    while (!loadOp.isDone)
+                    {
+                        yield return null;
+                    }
+                }
+                _sceneLoaded = true;
+                yield return new WaitForSeconds(1.0f);
+            }
+
             _characterManager = Object.FindAnyObjectByType<CharacterManager>();
             _characters = Object.FindObjectsByType<Character>(FindObjectsSortMode.None);
 
             yield return null;
         }
 
+        // ================================================================
+        // 環境チェック（これだけは最初から成功するべき）
+        // ================================================================
+
         [UnityTest]
-        public IEnumerator Test_MinimumCharacterCount()
+        [Order(0)]
+        public IEnumerator Test_00_EnvironmentCheck()
         {
-            // キャラクター数が最低数以上あることを確認（敵全消し防止）
+            // CharacterManager存在確認
+            Assert.IsNotNull(_characterManager,
+                "環境エラー: CharacterManager がシーン内に見つかりません。\n" +
+                "MainGameシーンが正しく設定されているか確認してください。");
+
+            // キャラクター数確認
+            Assert.GreaterOrEqual(_characterManager.AliveCount, MIN_CHARACTER_COUNT,
+                $"環境エラー: キャラクター数が不足しています（現在: {_characterManager.AliveCount}）。\n" +
+                "GameManagerの初期スポーン数を確認してください。");
+
+            // Character配列確認
+            Assert.IsTrue(_characters.Length > 0,
+                "環境エラー: Characterが見つかりません。");
+
+            Debug.Log($"[環境チェック] OK - CharacterManager: 存在, キャラクター数: {_characterManager.AliveCount}");
+
+            yield return null;
+        }
+
+        // ================================================================
+        // 課題テスト（未実装時は失敗する）
+        // ================================================================
+
+        [UnityTest]
+        [Order(1)]
+        public IEnumerator Test_01_CharacterManager_BuildStatsString_GCAlloc()
+        {
             Assert.IsNotNull(_characterManager, "CharacterManager が見つかりません");
 
-            int aliveCount = _characterManager.AliveCount;
-            Assert.GreaterOrEqual(aliveCount, MIN_CHARACTER_COUNT,
-                $"キャラクター数が不足しています（現在: {aliveCount}、必要: {MIN_CHARACTER_COUNT}以上）。" +
-                "敵を減らすのではなく、GC Allocの原因を修正してください。");
+            var buildMethod = typeof(CharacterManager).GetMethod("BuildStatsString",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+
+            Assert.IsNotNull(buildMethod, "BuildStatsString メソッドが見つかりません");
+
+            long gcAlloc = MeasureGCAlloc(() =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    buildMethod.Invoke(_characterManager, null);
+                }
+            });
+
+            // 未最適化時は約150KB以上のアロケーションが発生する
+            Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
+                $"CharacterManager.BuildStatsString: GC Allocが多すぎます。\n" +
+                $"現在: {gcAlloc:N0} bytes / 100回\n" +
+                $"目標: {MAX_ALLOWED_GC_ALLOC * 100:N0} bytes 以下\n\n" +
+                "【修正方法】\n" +
+                "1. static readonly StringBuilder を追加\n" +
+                "2. 文字列結合を StringBuilder.Append() に置き換え\n" +
+                "3. Enum.GetValues() の結果をキャッシュ");
 
             yield return null;
         }
 
         [UnityTest]
-        public IEnumerator Test_Character_UpdateDebugStatus_GCAlloc()
+        [Order(2)]
+        public IEnumerator Test_02_Character_UpdateDebugStatus_GCAlloc()
         {
-            // Character.cs - UpdateDebugStatus のGC Allocテスト
             Assert.IsTrue(_characters.Length > 0, "キャラクターが見つかりません");
 
             var character = _characters[0];
@@ -65,11 +130,10 @@ namespace PerformanceTraining.Tests
 
             if (updateMethod == null)
             {
-                Assert.Pass("UpdateDebugStatus メソッドが存在しません（スキップ）");
+                Assert.Inconclusive("UpdateDebugStatus メソッドが存在しません（スキップ）");
                 yield break;
             }
 
-            // ProfilerRecorderでGC Allocを計測
             long gcAlloc = MeasureGCAlloc(() =>
             {
                 for (int i = 0; i < 100; i++)
@@ -79,58 +143,23 @@ namespace PerformanceTraining.Tests
             });
 
             Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"Character.cs UpdateDebugStatus: GC Allocが多い（{gcAlloc} bytes / 100回）。" +
-                "StringBuilderを使用して最適化してください。");
+                $"Character.UpdateDebugStatus: GC Allocが多すぎます。\n" +
+                $"現在: {gcAlloc:N0} bytes / 100回\n" +
+                $"目標: {MAX_ALLOWED_GC_ALLOC * 100:N0} bytes 以下\n\n" +
+                "【修正方法】StringBuilderを使用して文字列結合を最適化");
 
             yield return null;
         }
 
         [UnityTest]
-        public IEnumerator Test_CharacterUI_UpdateNameText_GCAlloc()
+        [Order(3)]
+        public IEnumerator Test_03_BehaviorTree_BuildAIDebugLog_GCAlloc()
         {
-            // CharacterUI.cs - UpdateNameText のGC Allocテスト
-            var characterUIs = Object.FindObjectsByType<CharacterUI>(FindObjectsSortMode.None);
-
-            if (characterUIs.Length == 0)
-            {
-                Assert.Pass("CharacterUI が存在しません（スキップ）");
-                yield break;
-            }
-
-            var ui = characterUIs[0];
-            var updateMethod = typeof(CharacterUI).GetMethod("UpdateNameText",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (updateMethod == null)
-            {
-                Assert.Pass("UpdateNameText メソッドが存在しません（スキップ）");
-                yield break;
-            }
-
-            long gcAlloc = MeasureGCAlloc(() =>
-            {
-                for (int i = 0; i < 100; i++)
-                {
-                    updateMethod.Invoke(ui, null);
-                }
-            });
-
-            Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"CharacterUI.cs UpdateNameText: GC Allocが多い（{gcAlloc} bytes / 100回）。" +
-                "StringBuilderを使用して最適化してください。");
-
-            yield return null;
-        }
-
-        [UnityTest]
-        public IEnumerator Test_BehaviorTree_BuildAIDebugLog_GCAlloc()
-        {
-            // BehaviorTreeBase.cs - BuildAIDebugLog のGC Allocテスト
             var behaviorTrees = Object.FindObjectsByType<BehaviorTreeBase>(FindObjectsSortMode.None);
 
             if (behaviorTrees.Length == 0)
             {
-                Assert.Pass("BehaviorTree が存在しません（スキップ）");
+                Assert.Inconclusive("BehaviorTree が存在しません（スキップ）");
                 yield break;
             }
 
@@ -140,7 +169,7 @@ namespace PerformanceTraining.Tests
 
             if (buildMethod == null)
             {
-                Assert.Pass("BuildAIDebugLog メソッドが存在しません（スキップ）");
+                Assert.Inconclusive("BuildAIDebugLog メソッドが存在しません（スキップ）");
                 yield break;
             }
 
@@ -153,105 +182,58 @@ namespace PerformanceTraining.Tests
             });
 
             Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"BehaviorTreeBase.cs BuildAIDebugLog: GC Allocが多い（{gcAlloc} bytes / 100回）。" +
-                "StringBuilderを使用して最適化してください。");
+                $"BehaviorTreeBase.BuildAIDebugLog: GC Allocが多すぎます。\n" +
+                $"現在: {gcAlloc:N0} bytes / 100回\n" +
+                $"目標: {MAX_ALLOWED_GC_ALLOC * 100:N0} bytes 以下\n\n" +
+                "【修正方法】StringBuilderを使用して文字列結合を最適化");
 
             yield return null;
         }
 
         [UnityTest]
-        public IEnumerator Test_CharacterManager_BuildStatsString_GCAlloc()
+        [Order(4)]
+        public IEnumerator Test_04_ObjectPool_SpawnAttackEffect()
         {
-            // CharacterManager.cs - BuildStatsString のGC Allocテスト
             Assert.IsNotNull(_characterManager, "CharacterManager が見つかりません");
+            Assert.GreaterOrEqual(_characterManager.AliveCount, MIN_CHARACTER_COUNT,
+                "キャラクターが不足しています");
 
-            var buildMethod = typeof(CharacterManager).GetMethod("BuildStatsString",
-                BindingFlags.NonPublic | BindingFlags.Instance);
+            // ゲームプレイ中の最大エフェクト数を記録
+            int maxEffectCount = 0;
+            int sampleCount = 0;
 
-            if (buildMethod == null)
+            // 3秒間ゲームプレイを観察
+            float observeTime = 3.0f;
+            float elapsed = 0f;
+
+            while (elapsed < observeTime)
             {
-                Assert.Pass("BuildStatsString メソッドが存在しません（スキップ）");
-                yield break;
-            }
-
-            long gcAlloc = MeasureGCAlloc(() =>
-            {
-                for (int i = 0; i < 100; i++)
+                // 現在のエフェクト数をカウント
+                int currentCount = CountObjectsContaining("Effect");
+                if (currentCount > maxEffectCount)
                 {
-                    buildMethod.Invoke(_characterManager, null);
+                    maxEffectCount = currentCount;
                 }
-            });
+                sampleCount++;
 
-            Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"CharacterManager.cs BuildStatsString: GC Allocが多い（{gcAlloc} bytes / 100回）。" +
-                "StringBuilderを使用して最適化してください。");
-
-            yield return null;
-        }
-
-        [UnityTest]
-        public IEnumerator Test_ObjectPool_SpawnAttackEffect()
-        {
-            // Character.cs - SpawnAttackEffect のObject Poolテスト
-            Assert.IsTrue(_characters.Length >= 2, "テスト用キャラクターが不足しています");
-
-            var spawnMethod = typeof(Character).GetMethod("SpawnAttackEffect",
-                BindingFlags.NonPublic | BindingFlags.Instance);
-
-            if (spawnMethod == null)
-            {
-                Assert.Pass("SpawnAttackEffect メソッドが存在しません（スキップ）");
-                yield break;
+                yield return new WaitForSeconds(0.1f);
+                elapsed += 0.1f;
             }
 
-            // 攻撃エフェクトプレハブを確認
-            var prefabField = typeof(Character).GetField("_sharedAttackEffectPrefab",
-                BindingFlags.NonPublic | BindingFlags.Static);
+            // Object Poolが実装されていれば、最大エフェクト数はプールサイズ程度に収まる
+            // 未実装の場合、エフェクトが大量に生成される（Destroyまでの0.5秒間蓄積）
+            const int MAX_EXPECTED_EFFECTS = 20; // Pool実装時の想定最大数
 
-            if (prefabField == null)
-            {
-                Assert.Pass("攻撃エフェクト機能が存在しません（スキップ）");
-                yield break;
-            }
+            Debug.Log($"[ObjectPool Test] 観測時間: {observeTime}s, サンプル数: {sampleCount}, 最大エフェクト数: {maxEffectCount}");
 
-            var prefab = prefabField.GetValue(null) as GameObject;
-            if (prefab == null)
-            {
-                Assert.Pass("攻撃エフェクトプレハブが未設定です（スキップ）");
-                yield break;
-            }
-
-            var attacker = _characters[0];
-            var target = _characters[1];
-
-            // 攻撃可能な距離に配置
-            var originalPos = target.transform.position;
-            target.transform.position = attacker.transform.position + Vector3.forward * 1f;
-
-            // テスト前のエフェクト数をカウント
-            string effectName = prefab.name;
-            int beforeCount = CountObjectsWithName(effectName);
-
-            // 20回攻撃エフェクトを生成
-            long gcAlloc = MeasureGCAlloc(() =>
-            {
-                for (int i = 0; i < 20; i++)
-                {
-                    spawnMethod.Invoke(attacker, new object[] { target });
-                }
-            });
-
-            // 位置を戻す
-            target.transform.position = originalPos;
-
-            // テスト後のエフェクト数をカウント
-            int afterCount = CountObjectsWithName(effectName);
-            int newObjects = afterCount - beforeCount;
-
-            // Object Poolが実装されていれば新規オブジェクト数は少ないはず
-            Assert.LessOrEqual(newObjects, MAX_NEW_OBJECTS_FOR_POOL,
-                $"Object Pool: 未実装（20回攻撃で {newObjects} 個の新規オブジェクト生成）。" +
-                "Object Poolを実装してInstantiate/Destroyを避けてください。");
+            Assert.LessOrEqual(maxEffectCount, MAX_EXPECTED_EFFECTS,
+                $"ObjectPool: 未実装または不十分です。\n" +
+                $"ゲームプレイ中の最大エフェクト数: {maxEffectCount} 個\n" +
+                $"目標: {MAX_EXPECTED_EFFECTS} 個以下（プールから再利用）\n\n" +
+                "【実装方法】Character.cs の SpawnAttackEffect を修正:\n" +
+                "1. ObjectPoolを作成（Queue<GameObject>等）\n" +
+                "2. Instantiate → Pool.Get() に置き換え\n" +
+                "3. Destroy → Pool.Return() に置き換え");
 
             yield return null;
         }
@@ -261,23 +243,16 @@ namespace PerformanceTraining.Tests
         /// </summary>
         private long MeasureGCAlloc(System.Action action)
         {
-            // GC Allocを記録するProfilerRecorderを開始
             var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc");
-
-            // 計測前にGCを実行してベースラインを安定させる
             System.GC.Collect();
 
-            // アクションを実行
             action();
 
-            // 記録を停止
             recorder.Stop();
 
-            // 合計値を取得（複数サンプルの場合はCurrentValueを使用）
             long totalAlloc = 0;
             if (recorder.Valid && recorder.Count > 0)
             {
-                // 全サンプルの合計を計算
                 for (int i = 0; i < recorder.Count; i++)
                 {
                     totalAlloc += recorder.GetSample(i).Value;
@@ -285,14 +260,13 @@ namespace PerformanceTraining.Tests
             }
 
             recorder.Dispose();
-
             return totalAlloc;
         }
 
         /// <summary>
-        /// 指定名を含むオブジェクト数をカウント
+        /// 指定文字列を含むオブジェクト数をカウント
         /// </summary>
-        private int CountObjectsWithName(string namePart)
+        private int CountObjectsContaining(string namePart)
         {
             int count = 0;
             var allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);

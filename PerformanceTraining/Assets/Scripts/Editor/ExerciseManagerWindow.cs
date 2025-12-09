@@ -219,7 +219,7 @@ namespace PerformanceTraining.Editor
                 TargetMetric = "Frame Time (ms)",
                 TargetBefore = "40+ ms",
                 TargetAfter = "< 16 ms (60fps)",
-                SourceFile = "Exercises/CPU/CPUOptimization_Exercise.cs",
+                SourceFile = "", // Profilerで自分で探す
                 MeasurementType = "CPU",
                 TestMethodName = "TestCPUOptimization",
                 Steps = new StepInfo[] { }, // 実装項目は非表示（ヒントで誘導）
@@ -228,12 +228,12 @@ namespace PerformanceTraining.Editor
                     ProfilerGuide = "Window > Analysis > Profiler を開く\n" +
                                    "CPU Usage モジュールを選択し、Hierarchy ビューで Self 列をクリックしてソート\n" +
                                    "重い処理（赤い部分）をダブルクリックするとソースコードに飛べる",
-                    CheckPoint = "① 空間分割: GetAllCharacters() を GetNearbyCharacters() に置き換える\n" +
+                    CheckPoint = "① 空間分割: GetCellIndex() と GetNearbyCharactersOptimized() を実装\n" +
                                 "   → グリッドを実装し、周辺9セルのみ検索（O(n)→O(1)）\n\n" +
-                                "② 処理順序: ExecuteAttackSequence() 内の呼び出し順序を並び替える\n" +
+                                "② 処理順序: FindBestAttackTarget() 内の呼び出し順序を並び替える\n" +
                                 "   → 軽いフィルタを先に、重い経路探索を最後に実行",
                     FixCount = 2,
-                    TargetFolders = new string[] { "Scripts/Exercises/CPU/" }
+                    TargetFolders = new string[] { "Scripts/Core/" }
                 }
             },
             // 課題3: トレードオフ（GPU Instancing）
@@ -246,7 +246,7 @@ namespace PerformanceTraining.Editor
                 TargetMetric = "Draw Calls (Batches)",
                 TargetBefore = "200+ Draw Calls",
                 TargetAfter = "1 Draw Call",
-                SourceFile = "Exercises/Tradeoff/GPUInstancing_Exercise.cs",
+                SourceFile = "", // Profilerで自分で探す
                 MeasurementType = "GPU",
                 TestMethodName = "TestGPUInstancing",
                 Steps = new StepInfo[] { }, // 実装項目は非表示（ヒントで誘導）
@@ -781,23 +781,11 @@ namespace PerformanceTraining.Editor
 
             EditorGUILayout.Space(8);
 
-            // ソースコードを開く（SourceFileがある場合のみ）
-            if (!string.IsNullOrEmpty(info.SourceFile))
-            {
-                if (GUILayout.Button("ソースコードを開く", buttonStyle, GUILayout.Height(35)))
-                {
-                    OpenSourceFile(info.SourceFile);
-                }
-                EditorGUILayout.Space(8);
-            }
-            else
-            {
-                // 課題1のようにソースファイルを自分で探す課題の場合
-                EditorGUILayout.HelpBox(
-                    "Profilerを使って問題のあるソースコードを自分で見つけてください。",
-                    MessageType.Info);
-                EditorGUILayout.Space(8);
-            }
+            // Profilerを使って問題箇所を見つけてもらう
+            EditorGUILayout.HelpBox(
+                "Profilerを使って問題のあるソースコードを自分で見つけてください。",
+                MessageType.Info);
+            EditorGUILayout.Space(8);
 
             // シーンを再生
             EditorGUILayout.BeginHorizontal();

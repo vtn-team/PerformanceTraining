@@ -101,15 +101,20 @@ namespace PerformanceTraining.Exercises.Tradeoff
             // 2. 各キャラクターの色を取得（キャラクタータイプに応じて）
             //    _colors[i] = GetColorForCharacter(characters[i]);
 
+            int collectedCount = 0;
             for (int i = 0; i < count; i++)
             {
                 var character = characters[i];
                 if (character == null) continue;
 
-                // TODO: ここにMatrix4x4と色の設定を実装
+                // TODO: 以下のコメントを外して実装してください
+                // _matrices[collectedCount] = character.transform.localToWorldMatrix;
+                // _colors[collectedCount] = GetColorForCharacter(character);
+                // collectedCount++;
             }
 
-            return count;
+            // 未実装時は0を返す（実装後は collectedCount を返す）
+            return collectedCount;
         }
 
         /// <summary>
@@ -235,5 +240,6 @@ namespace PerformanceTraining.Exercises.Tradeoff
         }
 
         public int LastInstanceCount => _lastInstanceCount;
+        public int LastDrawCalls => _lastDrawCalls;
     }
 }
