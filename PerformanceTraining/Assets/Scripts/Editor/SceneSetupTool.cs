@@ -6,6 +6,7 @@ using UnityEngine.SceneManagement;
 using System.IO;
 using PerformanceTraining.Core;
 using PerformanceTraining.AI;
+using PerformanceTraining.Exercises.Tradeoff;
 using TMPro;
 
 namespace PerformanceTraining.Editor
@@ -588,6 +589,11 @@ namespace PerformanceTraining.Editor
                 }
             }
 
+            // GPUInstancing_Exercise作成（課題3用）
+            GameObject gpuInstancingObj = new GameObject("GPUInstancing_Exercise");
+            gpuInstancingObj.transform.SetParent(gameManagerObj.transform);
+            gpuInstancingObj.AddComponent<GPUInstancing_Exercise>();
+
             // シーンを保存
             EditorSceneManager.SaveScene(newScene, scenePath);
 
@@ -601,6 +607,45 @@ namespace PerformanceTraining.Editor
             CreateAllCharacterPrefabs();
             CreateAttackEffectPrefab();
             CreateMainGameScene();
+        }
+
+        /// <summary>
+        /// 現在のシーンにGPUInstancing_Exerciseコンポーネントを追加
+        /// </summary>
+        [MenuItem("PerformanceTraining/Add GPUInstancing_Exercise to Scene")]
+        public static void AddGPUInstancingExerciseToScene()
+        {
+            // 既存のコンポーネントを確認
+            var existing = Object.FindAnyObjectByType<GPUInstancing_Exercise>();
+            if (existing != null)
+            {
+                EditorUtility.DisplayDialog("Info", "GPUInstancing_Exercise already exists in the scene.", "OK");
+                Selection.activeGameObject = existing.gameObject;
+                return;
+            }
+
+            // GameManagerを探す（親として使用）
+            var gameManager = Object.FindAnyObjectByType<GameManager>();
+            GameObject parent = gameManager != null ? gameManager.gameObject : null;
+
+            // 新しいGameObjectを作成
+            GameObject gpuInstancingObj = new GameObject("GPUInstancing_Exercise");
+            if (parent != null)
+            {
+                gpuInstancingObj.transform.SetParent(parent.transform);
+            }
+
+            // コンポーネントを追加
+            gpuInstancingObj.AddComponent<GPUInstancing_Exercise>();
+
+            // シーンを汚しマークにする
+            EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+
+            // 選択
+            Selection.activeGameObject = gpuInstancingObj;
+
+            Debug.Log("GPUInstancing_Exercise added to scene.");
+            EditorUtility.DisplayDialog("Success", "GPUInstancing_Exercise component added to scene.\nDon't forget to save the scene!", "OK");
         }
     }
 }
