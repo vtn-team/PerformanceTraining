@@ -134,7 +134,7 @@ namespace PerformanceTraining.Editor
         private string userName = "";
 
         // 初回セットアップ用
-        private const string ASSET_DOWNLOAD_URL = "https://www.vtn-game.com/dl/asset/assets.unitypackage";
+        private const string ASSET_DOWNLOAD_URL = "https://www.vtn-game.com/dl/assets.unitypackage";
         private const string ASSET_CHECK_PATH = "Assets/polyperfect";
         private const string TEMP_PACKAGE_PATH = "Temp/assets.unitypackage";
         private string nameValidationError = "";
@@ -282,6 +282,44 @@ namespace PerformanceTraining.Editor
         {
             var window = GetWindow<ExerciseManagerWindow>("Exercise Manager");
             window.minSize = new Vector2(550, 750);
+        }
+
+        /// <summary>
+        /// アセットダウンロードを手動で実行するメニュー
+        /// </summary>
+        [MenuItem("PerformanceTraining/Download Assets")]
+        public static void DownloadAssetsManually()
+        {
+            var window = GetWindow<ExerciseManagerWindow>("Exercise Manager");
+            window.minSize = new Vector2(550, 750);
+            window.ForceStartAssetDownload();
+        }
+
+        /// <summary>
+        /// 外部からアセットダウンロードを開始する
+        /// </summary>
+        public void ForceStartAssetDownload()
+        {
+            if (isDownloadingAsset || isImportingAsset)
+            {
+                EditorUtility.DisplayDialog("処理中", "アセットのダウンロードまたはインポートが既に実行中です。", "OK");
+                return;
+            }
+
+            if (IsAssetImported())
+            {
+                bool redownload = EditorUtility.DisplayDialog(
+                    "確認",
+                    "アセットは既にインポート済みです。\n再ダウンロードしますか？",
+                    "再ダウンロード",
+                    "キャンセル");
+
+                if (!redownload)
+                    return;
+            }
+
+            StartAssetDownload();
+            Repaint();
         }
 
         private void InitStyles()
