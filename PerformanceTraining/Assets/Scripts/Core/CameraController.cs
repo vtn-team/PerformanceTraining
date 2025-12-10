@@ -17,12 +17,16 @@ namespace PerformanceTraining.Core
         [SerializeField] private float _fastMoveMultiplier = 3f;
         [SerializeField] private float _edgeScrollSpeed = 30f;
         [SerializeField] private float _edgeScrollThreshold = 20f;
-        [SerializeField] private bool _enableEdgeScroll = true;
+        [SerializeField] private bool _enableEdgeScroll = false;
 
         [Header("Zoom")]
         [SerializeField] private float _zoomSpeed = 20f;
         [SerializeField] private float _minHeight = 3f;
         [SerializeField] private float _maxHeight = 500f;
+
+        [Header("Initial Position")]
+        [SerializeField] private Vector3 _initialPosition = Vector3.zero;
+        [SerializeField] private float _initialZoom = 20f;
 
         [Header("Bounds")]
         [SerializeField] private bool _clampToBounds = true;
@@ -57,36 +61,12 @@ namespace PerformanceTraining.Core
         }
 
         /// <summary>
-        /// 課題モードに応じた初期ズームを設定
+        /// 初期位置・ズームを設定
         /// </summary>
         private void SetInitialZoom()
         {
-            float initialHeight;
-
-            if (_learningSettings != null)
-            {
-                switch (_learningSettings.currentExercise)
-                {
-                    case ExerciseMode.Memory:
-                        // 課題1: 最大ズーム（近い）
-                        initialHeight = _minHeight;
-                        break;
-                    case ExerciseMode.CPU:
-                    case ExerciseMode.Tradeoff:
-                    default:
-                        // 課題2, 3: 最小ズーム（遠い）
-                        initialHeight = _maxHeight;
-                        break;
-                }
-            }
-            else
-            {
-                initialHeight = _maxHeight;
-            }
-
-            // 原点から開始
-            float backOffset = initialHeight * 0.5f;
-            _targetPosition = new Vector3(0f, initialHeight, -backOffset);
+            float backOffset = _initialZoom * 0.5f;
+            _targetPosition = new Vector3(_initialPosition.x, _initialZoom, _initialPosition.z - backOffset);
             transform.position = _targetPosition;
         }
 

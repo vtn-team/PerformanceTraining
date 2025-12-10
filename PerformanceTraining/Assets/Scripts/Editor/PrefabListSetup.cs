@@ -241,16 +241,15 @@ namespace PerformanceTraining.Editor
             }
         }
 
-        private const string CHARACTER_UI_PREFAB_PATH = "Assets/Prefabs/UI/CharacterUI.prefab";
+        private const string CHARACTER_UI_PREFAB_PATH = "Assets/Resources/CharacterUI.prefab";
 
         [MenuItem("Tools/Performance Training/Create CharacterUI Prefab")]
         public static void CreateCharacterUIPrefab()
         {
-            // 出力フォルダを作成
-            string uiFolder = "Assets/Prefabs/UI";
-            if (!AssetDatabase.IsValidFolder(uiFolder))
+            // Resourcesフォルダを確認
+            if (!AssetDatabase.IsValidFolder("Assets/Resources"))
             {
-                AssetDatabase.CreateFolder("Assets/Prefabs", "UI");
+                AssetDatabase.CreateFolder("Assets", "Resources");
             }
 
             // 既存のプレハブがあれば削除

@@ -357,6 +357,7 @@ MonoBehaviour:
   _prefabList: {fileID: 11400000, guid: 9d9abe43ee4e5774299b819f77b37f28, type: 2}
   _characterPrefab: {fileID: 3170495024287874396, guid: c1ba86381aa864b42b5ddbe03913fee5, type: 3}
   _attackEffectPrefab: {fileID: 1576473203314237120, guid: 13d1c7a2c8986714f9c8a2026fc218d6, type: 3}
+  _characterUIPrefab: {fileID: 0}
   _initialSpawnCount: 200
   _spawnHeight: 0
   _useEvenDistribution: 0
@@ -445,10 +446,12 @@ MonoBehaviour:
   _fastMoveMultiplier: 3
   _edgeScrollSpeed: 30
   _edgeScrollThreshold: 20
-  _enableEdgeScroll: 1
+  _enableEdgeScroll: 0
   _zoomSpeed: 20
   _minHeight: 3
   _maxHeight: 500
+  _initialPosition: {x: 0, y: 0, z: -60}
+  _initialZoom: 20
   _clampToBounds: 1
   _focusZoomHeight: 50
   _learningSettings: {fileID: 0}

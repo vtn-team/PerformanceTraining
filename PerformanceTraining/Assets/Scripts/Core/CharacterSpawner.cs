@@ -121,7 +121,17 @@ namespace PerformanceTraining.Core
         /// </summary>
         private void SpawnCharacterUI(Character character)
         {
-            if (_characterUIPrefab == null) return;
+            // プレハブが未設定の場合はResourcesからロード
+            if (_characterUIPrefab == null)
+            {
+                _characterUIPrefab = Resources.Load<GameObject>("CharacterUI");
+            }
+
+            if (_characterUIPrefab == null)
+            {
+                Debug.LogWarning("CharacterUI prefab not found. Please create it via Tools > Performance Training > Create CharacterUI Prefab");
+                return;
+            }
 
             var uiObj = Instantiate(_characterUIPrefab);
             var characterUI = uiObj.GetComponent<CharacterUI>();
