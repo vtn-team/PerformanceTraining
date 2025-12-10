@@ -219,16 +219,16 @@ namespace PerformanceTraining.Core
 
         // ===== 名前生成用 =====
         private static readonly string[] FirstNames = {
-            "アルファ", "ベータ", "ガンマ", "デルタ", "イプシロン",
-            "ゼータ", "イータ", "シータ", "イオタ", "カッパ",
-            "ラムダ", "ミュー", "ニュー", "クシー", "オミクロン",
-            "パイ", "ロー", "シグマ", "タウ", "ウプシロン"
+            "Alpha", "Beta", "Gamma", "Delta", "Epsilon",
+            "Zeta", "Eta", "Theta", "Iota", "Kappa",
+            "Lambda", "Mu", "Nu", "Xi", "Omicron",
+            "Pi", "Rho", "Sigma", "Tau", "Upsilon"
         };
 
         private static readonly string[] LastNames = {
-            "レッド", "ブルー", "グリーン", "イエロー", "パープル",
-            "オレンジ", "ピンク", "ブラック", "ホワイト", "シルバー",
-            "ゴールド", "クリムゾン", "アズール", "エメラルド", "アンバー"
+            "Red", "Blue", "Green", "Yellow", "Purple",
+            "Orange", "Pink", "Black", "White", "Silver",
+            "Gold", "Crimson", "Azure", "Emerald", "Amber"
         };
 
         // ===== 初期化 =====
@@ -298,7 +298,7 @@ namespace PerformanceTraining.Core
         {
             string firstName = FirstNames[UnityEngine.Random.Range(0, FirstNames.Length)];
             string lastName = LastNames[UnityEngine.Random.Range(0, LastNames.Length)];
-            return $"{firstName}・{lastName}";
+            return $"{firstName} {lastName}";
         }
 
         // ===== 更新 =====
