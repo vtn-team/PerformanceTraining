@@ -1,0 +1,10 @@
+{
+  "httpMethod": "POST",
+  "path": "/submit",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"udid\": \"test-device-12345\", \"userName\": \"テストユーザー\", \"exerciseId\": \"Memory\", \"score\": 85, \"testsPassed\": 4, \"totalTests\": 5, \"executionTimeMs\": 0, \"gcAllocBytes\": 1024}",
+  "pathParameters": null,
+  "queryStringParameters": null
+}

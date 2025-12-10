@@ -1,0 +1,10 @@
+{
+  "httpMethod": "POST",
+  "path": "/submit",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": "{\"udid\":\"a95cb0b944237755968f63429d6418afe4256ea7\",\"userName\":\"nyangame\",\"exerciseId\":\"Tradeoff\",\"score\":94.44444274902344,\"testsPassed\":17,\"totalTests\":18,\"executionTimeMs\":0.0,\"gcAllocBytes\":0}",
+  "pathParameters": null,
+  "queryStringParameters": null
+}

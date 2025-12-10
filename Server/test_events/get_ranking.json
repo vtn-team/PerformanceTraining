@@ -1,0 +1,12 @@
+{
+  "httpMethod": "GET",
+  "path": "/ranking/Memory",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": null,
+  "pathParameters": {
+    "exerciseId": "Memory"
+  },
+  "queryStringParameters": null
+}

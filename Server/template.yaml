@@ -1,0 +1,91 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: PerformanceTraining Score Server (Single Lambda)
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.11
+    MemorySize: 128
+
+Resources:
+  # DynamoDB Table
+  ScoresTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: PerformanceTrainingScores
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: ExerciseIndex
+          KeySchema:
+            - AttributeName: sk
+              KeyType: HASH
+            - AttributeName: pk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # 統合Lambda関数
+  ScoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: PerformanceTraining-ScoreAPI
+      CodeUri: src/
+      Handler: index.handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ScoresTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ScoresTable
+      Events:
+        # スコア送信
+        SubmitScore:
+          Type: Api
+          Properties:
+            Path: /submit
+            Method: post
+        SubmitScoreOptions:
+          Type: Api
+          Properties:
+            Path: /submit
+            Method: options
+        # 全スコア取得
+        GetAllScores:
+          Type: Api
+          Properties:
+            Path: /scores
+            Method: get
+        # UDID別スコア取得
+        GetUserScores:
+          Type: Api
+          Properties:
+            Path: /scores/{udid}
+            Method: get
+        # ランキング取得
+        GetRanking:
+          Type: Api
+          Properties:
+            Path: /ranking/{exerciseId}
+            Method: get
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  ScoresTableName:
+    Description: "DynamoDB Table Name"
+    Value: !Ref ScoresTable
+  LambdaFunctionArn:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt ScoreFunction.Arn
