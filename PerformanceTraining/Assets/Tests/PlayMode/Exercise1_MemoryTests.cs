@@ -16,13 +16,17 @@ namespace PerformanceTraining.Tests
     public class Exercise1_MemoryTests
     {
         private const int MIN_CHARACTER_COUNT = 10;
-        private const long MAX_ALLOWED_GC_ALLOC = 1024; // 1KB per 100 calls
         private const string GAME_SCENE_NAME = "MainGame";
+
+        // テスト設定
+        private const float TEST_DURATION = 10f;          // テスト時間（秒）
+        private const float SPIKE_THRESHOLD_MS = 20f;     // スパイク閾値（ms）
+        private const int MAX_ALLOWED_SPIKES = 3;         // 許容スパイク回数
+        private const long MAX_AVG_GC_ALLOC_BYTES = 1024; // 平均GC Alloc上限（1KB）
 
         private static bool _sceneLoaded = false;
         private CharacterManager _characterManager;
         private Character[] _characters;
-        private CharacterUI[] _characterUIs;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
@@ -50,18 +54,17 @@ namespace PerformanceTraining.Tests
 
             _characterManager = Object.FindAnyObjectByType<CharacterManager>();
             _characters = Object.FindObjectsByType<Character>(FindObjectsSortMode.None);
-            _characterUIs = Object.FindObjectsByType<CharacterUI>(FindObjectsSortMode.None);
 
             yield return null;
         }
 
         // ================================================================
-        // 環境チェック（これだけは最初から成功するべき）
+        // Test 1: 環境チェック
         // ================================================================
 
         [UnityTest]
         [Order(0)]
-        public IEnumerator Test_00_EnvironmentCheck()
+        public IEnumerator Test_01_EnvironmentCheck()
         {
             // CharacterManager存在確認
             Assert.IsNotNull(_characterManager,
@@ -77,191 +80,140 @@ namespace PerformanceTraining.Tests
             Assert.IsTrue(_characters.Length > 0,
                 "環境エラー: Characterが見つかりません。");
 
-            Debug.Log($"[環境チェック] OK - CharacterManager: 存在, キャラクター数: {_characterManager.AliveCount}");
+            Debug.Log($"[Test 1: 環境チェック] OK\n" +
+                $"  CharacterManager: 存在\n" +
+                $"  キャラクター数: {_characterManager.AliveCount}");
 
             yield return null;
         }
 
         // ================================================================
-        // 課題テスト（未実装時は失敗する）
+        // Test 2: GC Alloc 平均チェック（1KB以下）
         // ================================================================
 
         [UnityTest]
         [Order(1)]
-        public IEnumerator Test_01_CharacterManager_BuildStatsString_GCAlloc()
+        public IEnumerator Test_02_GCAlloc_Average()
         {
             Assert.IsNotNull(_characterManager, "CharacterManager が見つかりません");
 
-            // ProfilerRecorderでGC Allocを計測（リフレクション不使用）
-            long gcAlloc = MeasureGCAlloc(() =>
-            {
-                for (int i = 0; i < 100; i++)
-                {
-                    var _ = _characterManager.StatsString;
-                }
-            });
-
-            Debug.Log($"[CharacterManager Test] GC Alloc: {gcAlloc:N0} bytes / 100回");
-
-            // 未最適化時は約150KB以上のアロケーションが発生する
-            Assert.LessOrEqual(gcAlloc, MAX_ALLOWED_GC_ALLOC * 100,
-                $"CharacterManager.BuildStatsString: GC Allocが多すぎます。\n" +
-                $"現在: {gcAlloc:N0} bytes / 100回\n" +
-                $"目標: {MAX_ALLOWED_GC_ALLOC * 100:N0} bytes 以下\n\n" +
-                "【修正方法】\n" +
-                "1. static readonly StringBuilder を追加\n" +
-                "2. 文字列結合を StringBuilder.Append() に置き換え\n" +
-                "3. Enum.GetValues() の結果をキャッシュ");
-
-            yield return null;
-        }
-
-        [UnityTest]
-        [Order(2)]
-        public IEnumerator Test_02_CharacterUI_UpdateNameText_GCAlloc()
-        {
-            // CharacterUIが存在すればテスト成功とする（リフレクション不使用）
-            if (_characterUIs.Length == 0)
-            {
-                Debug.Log("[CharacterUI Test] CharacterUIなし - スキップ");
-                Assert.Pass("CharacterUI が見つかりません（スキップ）");
-            }
-
-            Debug.Log($"[CharacterUI Test] CharacterUI存在確認OK - {_characterUIs.Length}個");
-
-            yield return null;
-        }
-
-        [UnityTest]
-        [Order(3)]
-        public IEnumerator Test_03_GCSpike_LongRunning()
-        {
-            Assert.IsNotNull(_characterManager, "CharacterManager が見つかりません");
-
-            // テスト設定
-            const float BASELINE_DURATION = 5f;   // 最初の5秒でベースライン計測
-            const float TEST_DURATION = 30f;      // 合計30秒間テスト
-            const float SPIKE_MARGIN_MS = 50f;    // 中央値+50ms以上をスパイクとみなす（テスト実行時の負荷を考慮）
-            const int MAX_ALLOWED_SPIKES = 3;     // 許容するスパイク回数
+            // PlayerLoop内のGC Allocを計測
+            using var gcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc");
 
             float elapsed = 0f;
-            var baselineFrameTimes = new System.Collections.Generic.List<float>();
+            long totalGCAlloc = 0;
+            long maxGCAlloc = 0;
+            int frameCount = 0;
 
-            Debug.Log($"[GC Spike Test] 開始: ベースライン計測 {BASELINE_DURATION}秒");
-
-            // Phase 1: 最初の5秒間でベースライン（中央値）を計測
-            while (elapsed < BASELINE_DURATION)
-            {
-                float frameTimeMs = Time.deltaTime * 1000f;
-                baselineFrameTimes.Add(frameTimeMs);
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-
-            // 中央値を計算
-            baselineFrameTimes.Sort();
-            float medianFrameTime = baselineFrameTimes[baselineFrameTimes.Count / 2];
-            float spikeThreshold = medianFrameTime + SPIKE_MARGIN_MS;
-
-            Debug.Log($"[GC Spike Test] ベースライン中央値: {medianFrameTime:F2}ms, スパイク閾値: {spikeThreshold:F2}ms");
-
-            // Phase 2: 残りの時間でスパイクを検出
-            int spikeCount = 0;
-            float maxFrameTime = 0f;
-            int testFrameCount = 0;
-            var spikeFrameTimes = new System.Collections.Generic.List<float>();
+            Debug.Log($"[Test 2: GC Alloc] 計測開始 ({TEST_DURATION}秒)");
 
             while (elapsed < TEST_DURATION)
             {
-                float frameTimeMs = Time.deltaTime * 1000f;
-                testFrameCount++;
+                yield return null;
 
-                if (frameTimeMs > maxFrameTime)
-                {
-                    maxFrameTime = frameTimeMs;
-                }
+                long frameGCAlloc = gcAllocRecorder.LastValue;
+                frameCount++;
 
-                // スパイク検出
-                if (frameTimeMs > spikeThreshold)
+                totalGCAlloc += frameGCAlloc;
+                if (frameGCAlloc > maxGCAlloc)
                 {
-                    spikeCount++;
-                    spikeFrameTimes.Add(frameTimeMs);
+                    maxGCAlloc = frameGCAlloc;
                 }
 
                 elapsed += Time.deltaTime;
-                yield return null;
             }
 
-            // スパイク情報をログ出力
+            long avgGCAlloc = frameCount > 0 ? totalGCAlloc / frameCount : 0;
+            double avgGCAllocKB = avgGCAlloc / 1024.0;
+
+            Debug.Log($"[Test 2: GC Alloc] 結果:\n" +
+                $"  テスト時間: {elapsed:F1}s\n" +
+                $"  フレーム数: {frameCount}\n" +
+                $"  GC Alloc (平均): {avgGCAlloc:N0} bytes ({avgGCAllocKB:F2} KB)\n" +
+                $"  GC Alloc (最大): {maxGCAlloc:N0} bytes\n" +
+                $"  GC Alloc (合計): {totalGCAlloc:N0} bytes\n" +
+                $"  目標: 平均 {MAX_AVG_GC_ALLOC_BYTES:N0} bytes (1 KB) 以下");
+
+            Assert.LessOrEqual(avgGCAlloc, MAX_AVG_GC_ALLOC_BYTES,
+                $"GC Alloc: フレームあたりの平均GC Allocが多すぎます。\n" +
+                $"現在: {avgGCAlloc:N0} bytes ({avgGCAllocKB:F2} KB) / frame\n" +
+                $"目標: {MAX_AVG_GC_ALLOC_BYTES:N0} bytes (1 KB) 以下\n\n" +
+                "【原因と対策】\n" +
+                "1. StringBuilderで文字列結合を最適化\n" +
+                "2. ObjectPoolを実装してInstantiate/Destroyを削減\n" +
+                "3. 毎フレームのnew List<>()等を避ける\n" +
+                "4. デリゲートやラムダ式をキャッシュ");
+
+            yield return null;
+        }
+
+        // ================================================================
+        // Test 3: スパイク回数チェック
+        // ================================================================
+
+        [UnityTest]
+        [Order(2)]
+        public IEnumerator Test_03_Spike_Count()
+        {
+            Assert.IsNotNull(_characterManager, "CharacterManager が見つかりません");
+
+            // PlayerLoopの負荷を計測
+            using var playerLoopRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Internal, "PlayerLoop");
+
+            float elapsed = 0f;
+            int spikeCount = 0;
+            double maxFrameTime = 0;
+            int frameCount = 0;
+            var spikeFrameTimes = new System.Collections.Generic.List<double>();
+
+            Debug.Log($"[Test 3: スパイク] 計測開始 ({TEST_DURATION}秒, 閾値: {SPIKE_THRESHOLD_MS}ms)");
+
+            while (elapsed < TEST_DURATION)
+            {
+                yield return null;
+
+                // PlayerLoopの時間をナノ秒からミリ秒に変換
+                double playerLoopMs = playerLoopRecorder.LastValue / 1_000_000.0;
+                frameCount++;
+
+                if (playerLoopMs > maxFrameTime)
+                {
+                    maxFrameTime = playerLoopMs;
+                }
+
+                // スパイク検出
+                if (playerLoopMs > SPIKE_THRESHOLD_MS)
+                {
+                    spikeCount++;
+                    spikeFrameTimes.Add(playerLoopMs);
+                }
+
+                elapsed += Time.deltaTime;
+            }
+
             string spikeInfo = spikeFrameTimes.Count > 0
                 ? string.Join(", ", spikeFrameTimes.ConvertAll(t => $"{t:F1}ms"))
                 : "なし";
 
-            Debug.Log($"[GC Spike Test] 結果:\n" +
+            Debug.Log($"[Test 3: スパイク] 結果:\n" +
                 $"  テスト時間: {elapsed:F1}s\n" +
-                $"  ベースラインフレーム数: {baselineFrameTimes.Count}\n" +
-                $"  テストフレーム数: {testFrameCount}\n" +
-                $"  ベースライン中央値: {medianFrameTime:F2}ms\n" +
+                $"  フレーム数: {frameCount}\n" +
+                $"  スパイク閾値: {SPIKE_THRESHOLD_MS}ms\n" +
+                $"  スパイク回数: {spikeCount} (許容: {MAX_ALLOWED_SPIKES}回以下)\n" +
                 $"  最大フレーム時間: {maxFrameTime:F2}ms\n" +
-                $"  スパイク閾値: {spikeThreshold:F2}ms (中央値+{SPIKE_MARGIN_MS}ms)\n" +
-                $"  スパイク回数: {spikeCount}\n" +
                 $"  スパイク詳細: {spikeInfo}");
 
             Assert.LessOrEqual(spikeCount, MAX_ALLOWED_SPIKES,
-                $"GCスパイク: 頻繁なGCによるフレーム落ちが検出されました。\n" +
-                $"スパイク回数: {spikeCount} 回（中央値+{SPIKE_MARGIN_MS}ms超過）\n" +
+                $"スパイク: 頻繁なフレーム落ちが検出されました。\n" +
+                $"スパイク回数: {spikeCount} 回（{SPIKE_THRESHOLD_MS}ms超過）\n" +
                 $"許容回数: {MAX_ALLOWED_SPIKES} 回以下\n" +
-                $"スパイク閾値: {spikeThreshold:F1}ms\n" +
-                $"最大フレーム時間: {maxFrameTime:F1}ms\n" +
-                $"ベースライン中央値: {medianFrameTime:F1}ms\n\n" +
+                $"最大フレーム時間: {maxFrameTime:F1}ms\n\n" +
                 "【原因と対策】\n" +
                 "1. ObjectPoolを実装してInstantiate/Destroyを削減\n" +
-                "2. StringBuilderで文字列結合を最適化\n" +
-                "3. 毎フレームのnew List<>()等を避ける");
+                "2. 大量のGC Allocを減らしてGCスパイクを防止\n" +
+                "3. 重い処理を分散して実行");
 
             yield return null;
-        }
-
-        /// <summary>
-        /// ProfilerRecorderを使用してGC Allocを計測
-        /// </summary>
-        private long MeasureGCAlloc(System.Action action)
-        {
-            var recorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC.Alloc");
-            System.GC.Collect();
-
-            action();
-
-            recorder.Stop();
-
-            long totalAlloc = 0;
-            if (recorder.Valid && recorder.Count > 0)
-            {
-                for (int i = 0; i < recorder.Count; i++)
-                {
-                    totalAlloc += recorder.GetSample(i).Value;
-                }
-            }
-
-            recorder.Dispose();
-            return totalAlloc;
-        }
-
-        /// <summary>
-        /// 指定文字列を含むオブジェクト数をカウント
-        /// </summary>
-        private int CountObjectsContaining(string namePart)
-        {
-            int count = 0;
-            var allObjects = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None);
-            foreach (var obj in allObjects)
-            {
-                if (obj.name.Contains(namePart))
-                {
-                    count++;
-                }
-            }
-            return count;
         }
     }
 }
