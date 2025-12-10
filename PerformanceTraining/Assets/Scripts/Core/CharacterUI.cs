@@ -207,7 +207,8 @@ namespace PerformanceTraining.Core
                 _canvasGroup.alpha = visible ? 1f : 0f;
                 _canvasGroup.blocksRaycasts = visible;
             }
-            gameObject.SetActive(visible);
+            // Note: gameObject.SetActive(false)を使うとLateUpdateが停止して
+            // 再表示できなくなるため、CanvasGroupのalphaのみで制御する
         }
 
         private void OnCharacterDamaged(Character character, float damage)
